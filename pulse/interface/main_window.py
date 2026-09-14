@@ -1066,7 +1066,7 @@ class MainWindow(MainWindow_UI):
         LoadingWindow(tmp).run()
 
     def open_project_dialog(self):
-        extensions = ["pulse"]
+        extensions = ["pulse", "pulse.zip"]
         project_path = FileDialogService.open_file(extensions, "Open Project", "project_folder")
 
         if project_path is None:
@@ -1087,7 +1087,7 @@ class MainWindow(MainWindow_UI):
         if not obj.complete:
             return obj.complete
 
-        extensions = ["pulse"]
+        extensions = ["pulse", "pulse.zip"]
         file_path = FileDialogService.save_file(extensions, "Save As", "project_folder")
 
         if file_path is None:

@@ -135,7 +135,7 @@ class FileDialogService:
                 return "Spreadsheet files"
             case "dat" | "csv" | "txt":
                 return "Text files"
-            case "pulse":
+            case "pulse" | "pulse.zip":
                 return "Project files"
             case "iges" | "igs" | "step" | "stp":
                 return "Geometry files"
@@ -171,7 +171,7 @@ class FileDialogService:
                 return 0
             case "dat" | "txt" | "csv":
                 return 1
-            case "pulse":
+            case "pulse" | "pulse.zip":
                 return 2
             case "iges" | "igs" | "step" | "stp":
                 return 3
