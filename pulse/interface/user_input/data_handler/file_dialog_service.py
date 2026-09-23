@@ -73,12 +73,12 @@ class FileDialogService:
         return path
 
     @staticmethod
-    def get_existing_dir(caption: str = "", dir: str | Path = "") -> Path | None:
+    def get_existing_directory(caption: str = "", directory: str | Path = "") -> Path | None:
         kwargs = {}
         if platform.system() == "Linux":
             kwargs["options"] = QFileDialog.Option.DontUseNativeDialog
 
-        existing_dir = QFileDialog.getExistingDirectory(caption=caption, dir=str(dir), **kwargs)
+        existing_dir = QFileDialog.getExistingDirectory(caption=caption, dir=str(directory), **kwargs)
 
         if not existing_dir:
             return None
@@ -153,14 +153,6 @@ class FileDialogService:
     @staticmethod
     def _get_path_extension(string: str) -> str:
         return string.split("*.")[-1].rstrip(")")
-
-    @staticmethod
-    def get_existing_directory(caption: str, directory: str | Path) -> Path | None:
-        existing_dir = QFileDialog.getExistingDirectory(caption=caption, dir=str(directory))
-        existing_dir = Path(existing_dir)
-
-        if existing_dir.exists():
-            return existing_dir
 
     @staticmethod
     def _sort_extensions(extension: str) -> int:

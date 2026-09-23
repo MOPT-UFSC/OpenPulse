@@ -12,7 +12,7 @@ class TextFileHandler(IOHandler):
     @staticmethod
     def read(file_path: Path, delimiter: str = ",") -> TextData:
         try:
-            loaded_data = np.loadtxt(file_path, delimiter=delimiter)
+            loaded_data = np.loadtxt(file_path, delimiter=delimiter, ndmin=2)
         except:
             loaded_data = TextFileHandler._load_text_file_data(file_path)
 

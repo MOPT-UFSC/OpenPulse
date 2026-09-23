@@ -71,7 +71,7 @@ class TestReadRouting:
         mocked_read.assert_called_once_with(fake_path)
         assert result is mock_result
 
-    @pytest.mark.parametrize("extension", SpreadsheetFileHandler.EXTENSIONS)
+    @pytest.mark.parametrize("extension", SpreadsheetFileHandler.READ_EXTENSIONS)
     def test_routes_spreadsheet_extensions_to_spreadsheet_handler(self, extension):
         mock_result = MagicMock(spec=SpreadsheetData)
         fake_path = Path(f"file{extension}")

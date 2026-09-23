@@ -5,10 +5,12 @@ from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QTreeWidgetItem, QWidget
 
 from pulse import app
 from pulse.extensions import SUPPORTED_SPREADSHEET_READ_EXTENSIONS, SUPPORTED_TEXT_EXTENSIONS
+from pulse.interface import error_title
 from pulse.interface.ui_generated.data_handler.data_import_assistant_ui import DataImportAssistant_UI
 from pulse.interface.user_input.data_handler.file_dialog_service import FileDialogService
 from pulse.interface.user_input.data_handler.file_handlers.file_handler import FileHandler
 from pulse.interface.user_input.data_handler.imported_data import ImportedData, SpreadsheetData, SpreadsheetSheet
+from pulse.interface.user_input.project.print_message import PrintMessageInput
 
 
 class DataImportAssistant(DataImportAssistant_UI):
@@ -84,31 +86,53 @@ class DataImportAssistant(DataImportAssistant_UI):
         if not new_paths:
             return
 
-        self.imported_paths += new_paths
-
-        if len(self.imported_paths) == 1:
-            imported_text = str(self.imported_paths[0])
-        else:
-            imported_text = f"{self.imported_paths[0].name} (+{len(self.imported_paths) - 1} more)"
-
-        tooltip_text = "Imported files:\n" + "\n".join(map(str, self.imported_paths))
-
-        self.lineEdit_import_results_path.setText(imported_text)
-        self.lineEdit_import_results_path.setToolTip(tooltip_text)
+        failed_files = list()
 
         for imported_path in new_paths:
-            file = FileHandler().read(imported_path)
+            try:
+                file = FileHandler.read(imported_path)
+            except Exception as error_log:
+                failed_files.append(f"{imported_path.name}: {error_log}")
+                continue
 
             if isinstance(file, SpreadsheetData):
+                if not file.sheets:
+                    failed_files.append(f"{imported_path.name}: no numeric data found")
+                    continue
+
                 for sheet in file.sheets:
                     sheet.source_file = file.filename
                     key = self.get_data_index()
                     self.imported_results[key] = sheet
+
+            elif file is None or file.data is None or file.data.size == 0:
+                failed_files.append(f"{imported_path.name}: no numeric data found")
+                continue
+
             else:
                 key = self.get_data_index()
                 self.imported_results[key] = file
 
+            self.imported_paths.append(imported_path)
+
+        if self.imported_paths:
+            if len(self.imported_paths) == 1:
+                imported_text = str(self.imported_paths[0])
+            else:
+                imported_text = f"{self.imported_paths[0].name} (+{len(self.imported_paths) - 1} more)"
+
+            tooltip_text = "Imported files:\n" + "\n".join(map(str, self.imported_paths))
+
+            self.lineEdit_import_results_path.setText(imported_text)
+            self.lineEdit_import_results_path.setToolTip(tooltip_text)
+
         self.update_treeWidget_info()
+
+        if failed_files:
+            title = "Error while importing data"
+            message = "The following files could not be imported:\n\n"
+            message += "\n".join(failed_files)
+            PrintMessageInput([error_title, title, message])
 
     def update_treeWidget_info(self):
         self.cache_checkButtons_state()

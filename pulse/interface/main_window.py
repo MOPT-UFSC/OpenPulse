@@ -256,7 +256,7 @@ class MainWindow(MainWindow_UI):
             if not path.exists():
                 continue
 
-            if path.suffix == ".pulse":
+            if path.name.lower().endswith((".pulse", ".pulse.zip")):
                 self.open_project(path)
                 break
 

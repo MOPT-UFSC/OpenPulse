@@ -48,11 +48,11 @@ class FileHandler:
     def _read(file_path: str | Path) -> ImportedData | None:
         file_path = Path(file_path)
         
-        if file_path.suffix in TextFileHandler.EXTENSIONS:
+        if file_path.suffix.lower() in TextFileHandler.EXTENSIONS:
             return TextFileHandler.read(file_path)
-        elif file_path.suffix in HDF5FileHandler.EXTENSIONS:
+        elif file_path.suffix.lower() in HDF5FileHandler.EXTENSIONS:
             return HDF5FileHandler.read(file_path)
-        elif file_path.suffix in SpreadsheetFileHandler.READ_EXTENSIONS:
+        elif file_path.suffix.lower() in SpreadsheetFileHandler.READ_EXTENSIONS:
             return SpreadsheetFileHandler.read(file_path)
         else:
             all_extensions = TextFileHandler.EXTENSIONS + HDF5FileHandler.EXTENSIONS + SpreadsheetFileHandler.READ_EXTENSIONS
@@ -65,7 +65,7 @@ class FileHandler:
         if not file_path.parent.exists():
             raise FileNotFoundError(f"The path {file_path.parent} does not exist")
 
-        if file_path.suffix not in TextFileHandler.EXTENSIONS:
+        if file_path.suffix.lower() not in TextFileHandler.EXTENSIONS:
             raise FileHandler.raise_extensions_error(file_path, TextFileHandler.EXTENSIONS)
 
         TextFileHandler.save(file_path, data, delimiter=delimiter, header=header)
@@ -77,8 +77,8 @@ class FileHandler:
         if not file_path.parent.exists():
             raise FileNotFoundError(f"The path {file_path.parent} does not exist")
 
-        if file_path.suffix not in SpreadsheetFileHandler.WRITE_EXTENSIONS:
-            raise FileHandler.raise_extensions_error(file_path, SpreadsheetFileHandler.EXTENSIONS)
+        if file_path.suffix.lower() not in SpreadsheetFileHandler.WRITE_EXTENSIONS:
+            raise FileHandler.raise_extensions_error(file_path, SpreadsheetFileHandler.WRITE_EXTENSIONS)
 
         SpreadsheetFileHandler.save(file_path, sheetname, data, index_rows, append)
 

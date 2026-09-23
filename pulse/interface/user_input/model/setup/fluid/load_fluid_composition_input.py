@@ -83,39 +83,40 @@ class LoadFluidCompositionInput(LoadFluidComposition_UI):
         self.comboBox_sheet_names.clear()
         self.comboBox_state_properties.clear()
 
-        from openpyxl import load_workbook
         from polars import read_excel
 
-        wb = load_workbook(self.file_path)
+        try:
+            sheets = read_excel(
+                self.file_path,
+                sheet_id=0,
+                has_header=True,
+                raise_if_empty=False,
+            )
 
-        for sheetname in wb.sheetnames:
+        except Exception as error_log:
+            window_title = "Error"
+            title = "Error while reading data from file"
+            message = str(error_log)
+            PrintMessageInput([window_title, title, message])
+            return True
 
-            try:
-                sheet_data = read_excel(
-                    self.file_path,
-                    sheet_name=sheetname,
-                    columns=(0, 1, 2, 3),
-                    has_header=True,
-                )
+        for sheetname, sheet_data in sheets.items():
+            if sheet_data.is_empty():
+                continue
 
-                if "state properties" in sheetname.lower().replace("_", " "):
-                    self.comboBox_state_properties.addItem(sheetname)
-                    if not self.comboBox_state_properties.isEnabled():
-                        self.comboBox_state_properties.setDisabled(False)
-                    
-                else:
-                    self.comboBox_sheet_names.addItem(sheetname)
-                    if not self.comboBox_sheet_names.isEnabled():
-                        self.comboBox_sheet_names.setDisabled(False)
+            sheet_data = sheet_data.select(sheet_data.columns[:4])
 
-                self.imported_data[sheetname] = sheet_data.to_numpy()
+            if "state properties" in sheetname.lower().replace("_", " "):
+                self.comboBox_state_properties.addItem(sheetname)
+                if not self.comboBox_state_properties.isEnabled():
+                    self.comboBox_state_properties.setDisabled(False)
+                
+            else:
+                self.comboBox_sheet_names.addItem(sheetname)
+                if not self.comboBox_sheet_names.isEnabled():
+                    self.comboBox_sheet_names.setDisabled(False)
 
-            except Exception as error_log:
-                window_title = "Error"
-                title = "Error while reading data from file"
-                message = str(error_log)
-                PrintMessageInput([window_title, title, message])
-                return True
+            self.imported_data[sheetname] = sheet_data.to_numpy()
 
     def confirm_button_callback(self):
         if not self.imported_data:

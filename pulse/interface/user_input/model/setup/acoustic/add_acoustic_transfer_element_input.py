@@ -236,8 +236,8 @@ class AddAcousticTransferElementInput(UserInput, AcousticTransferElementInput_UI
             return
 
         for sheet in imported_file.sheets:
-            if sheet.name:
-                self.element_transfer_data[sheet.name] = sheet.data
+            if sheet.sheetname:
+                self.element_transfer_data[sheet.sheetname] = sheet.data
 
     def update_frequency_setup(self, frequencies: np.ndarray, path: Path):
 

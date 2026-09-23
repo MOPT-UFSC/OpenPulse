@@ -24,11 +24,15 @@ class SpreadsheetFileHandler(IOHandler):
             file_path,
             sheet_id=0,
             engine="calamine",
-            has_header=False
+            has_header=False,
+            raise_if_empty=False
         )
 
         sheets = []
         for sheetname, df in sheets_data.items():
+            if df.is_empty():
+                continue
+
             sheet_data = SpreadsheetFileHandler._remove_unnecesary_header_in_data(df.to_numpy())
             sheets.append(SpreadsheetSheet(sheetname, sheet_data))
 
