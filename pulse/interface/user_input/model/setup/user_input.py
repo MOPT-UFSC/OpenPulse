@@ -7,7 +7,7 @@ from PySide6.QtGui import QCloseEvent, Qt
 from PySide6.QtWidgets import QDialog, QLineEdit, QPushButton
 
 from pulse import app
-from pulse.extensions import SUPPORTED_SPREADSHEET_EXTENSIONS, SUPPORTED_TEXT_EXTENSIONS
+from pulse.extensions import SUPPORTED_SPREADSHEET_READ_EXTENSIONS, SUPPORTED_TEXT_EXTENSIONS
 from pulse.interface import error_title
 from pulse.interface.user_input.data_handler.file_dialog_service import (
     FileDialogService,
@@ -59,7 +59,7 @@ class UserInput(QDialog):
                 if dof_label != "":
                     caption += f" ({dof_label})"
                 
-                extensions = SUPPORTED_SPREADSHEET_EXTENSIONS + SUPPORTED_TEXT_EXTENSIONS
+                extensions = SUPPORTED_SPREADSHEET_READ_EXTENSIONS + SUPPORTED_TEXT_EXTENSIONS
 
                 table_path = FileDialogService.open_file(extensions, caption, "imported_table_folder")
 

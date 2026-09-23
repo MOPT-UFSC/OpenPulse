@@ -1,12 +1,10 @@
+import numpy as np
 from PySide6.QtWidgets import QFileDialog
 
 from pulse import app
-from pulse.extensions import SUPPORTED_SPREADSHEET_EXTENSIONS, SUPPORTED_TEXT_EXTENSIONS
-from pulse.interface.user_input.project.print_message import PrintMessageInput
+from pulse.extensions import SUPPORTED_SPREADSHEET_WRITE_EXTENSIONS, SUPPORTED_TEXT_EXTENSIONS
 from pulse.interface.user_input.data_handler.file_dialog_service import FileDialogService
-
-import numpy as np
-
+from pulse.interface.user_input.project.print_message import PrintMessageInput
 
 warning_title = "Warning"
 
@@ -84,7 +82,7 @@ class ExportModelResults(QFileDialog):
         caption = "Export the model results"
 
         if len(self.data) == 1:
-            extensions = SUPPORTED_SPREADSHEET_EXTENSIONS + SUPPORTED_TEXT_EXTENSIONS 
+            extensions = SUPPORTED_SPREADSHEET_WRITE_EXTENSIONS + SUPPORTED_TEXT_EXTENSIONS 
         else:
             extensions = ["xlsx"]
 

@@ -1,15 +1,14 @@
-from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QTreeWidgetItem, QWidget
-from PySide6.QtGui import QCloseEvent
+import numpy as np
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QCloseEvent
+from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QTreeWidgetItem, QWidget
 
 from pulse import app
-from pulse.extensions import SUPPORTED_SPREADSHEET_EXTENSIONS, SUPPORTED_TEXT_EXTENSIONS
+from pulse.extensions import SUPPORTED_SPREADSHEET_READ_EXTENSIONS, SUPPORTED_TEXT_EXTENSIONS
 from pulse.interface.ui_generated.data_handler.data_import_assistant_ui import DataImportAssistant_UI
 from pulse.interface.user_input.data_handler.file_dialog_service import FileDialogService
-from pulse.interface.user_input.data_handler.imported_data import ImportedData, SpreadsheetData, SpreadsheetSheet
 from pulse.interface.user_input.data_handler.file_handlers.file_handler import FileHandler
-
-import numpy as np
+from pulse.interface.user_input.data_handler.imported_data import ImportedData, SpreadsheetData, SpreadsheetSheet
 
 
 class DataImportAssistant(DataImportAssistant_UI):
@@ -78,7 +77,7 @@ class DataImportAssistant(DataImportAssistant_UI):
         self.spinBox_skiprows.setDisabled(not self.checkBox_skiprows.isChecked())
 
     def import_results(self):
-        file_extensions = SUPPORTED_SPREADSHEET_EXTENSIONS + SUPPORTED_TEXT_EXTENSIONS
+        file_extensions = SUPPORTED_SPREADSHEET_READ_EXTENSIONS + SUPPORTED_TEXT_EXTENSIONS
 
         new_paths = FileDialogService.open_multiple_files(file_extensions, last_folder="imported_data_folder")
 
@@ -133,7 +132,7 @@ class DataImportAssistant(DataImportAssistant_UI):
                     self.ids_to_checkBox[id].setChecked(self.checkButtons_state[id])
 
                 if isinstance(file, SpreadsheetSheet):
-                    _item = QTreeWidgetItem([file.source_file, file.name])
+                    _item = QTreeWidgetItem([file.source_file, file.sheetname])
                     self.treeWidget_import_sheet_files.addTopLevelItem(_item)
                     self.treeWidget_import_sheet_files.setItemWidget(_item, 2, checkbox_container)
 
@@ -165,7 +164,7 @@ class DataImportAssistant(DataImportAssistant_UI):
                 key = (id)
 
                 if isinstance(file, SpreadsheetSheet):
-                    temp_dict = self.generate_temp_dict(file.name, file.data, color)
+                    temp_dict = self.generate_temp_dict(file.sheetname, file.data, color)
                 else:
                     temp_dict = self.generate_temp_dict(file.filename, file.data, color)
 

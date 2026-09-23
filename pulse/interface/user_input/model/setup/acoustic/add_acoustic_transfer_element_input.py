@@ -6,7 +6,7 @@ from PySide6.QtCore import QEvent, QObject, Qt, Signal
 from PySide6.QtWidgets import QTreeWidgetItem
 
 from pulse import app
-from pulse.extensions import SUPPORTED_SPREADSHEET_EXTENSIONS
+from pulse.extensions import SUPPORTED_SPREADSHEET_READ_EXTENSIONS
 from pulse.interface import error_title, warning_title
 from pulse.interface.ui_generated.model.setup.acoustic.acoustic_transfer_element_input_ui import (
     AcousticTransferElementInput_UI,
@@ -201,7 +201,7 @@ class AddAcousticTransferElementInput(UserInput, AcousticTransferElementInput_UI
     def search_callback(self):
         caption = "Choose a file to import element transfer data"
 
-        imported_path = FileDialogService.open_file(SUPPORTED_SPREADSHEET_EXTENSIONS, caption=caption, last_folder="imported_table_folder")
+        imported_path = FileDialogService.open_file(SUPPORTED_SPREADSHEET_READ_EXTENSIONS, caption=caption, last_folder="imported_table_folder")
 
         if imported_path is None:
             info_message = "Select the spreadsheet file to import "

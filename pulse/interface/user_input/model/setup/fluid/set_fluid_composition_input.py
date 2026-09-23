@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from pulse import app
-from pulse.extensions import SUPPORTED_SPREADSHEET_EXTENSIONS
+from pulse.extensions import SUPPORTED_SPREADSHEET_WRITE_EXTENSIONS
 from pulse.interface import error_title, warning_title
 from pulse.interface.ui_generated.model.setup.fluid.set_fluid_composition_input_ui import (
     SetFluidCompositionInput_UI,
@@ -1264,7 +1264,7 @@ class SetFluidCompositionInput(SetFluidCompositionInput_UI):
     def export_fluid_composition_callback(self):
         self.hide()
 
-        file_path = FileDialogService.save_file(file_extensions=SUPPORTED_SPREADSHEET_EXTENSIONS,
+        file_path = FileDialogService.save_file(file_extensions=SUPPORTED_SPREADSHEET_WRITE_EXTENSIONS,
                                     caption="Export the fluid composition data in spreadsheet file",
                                     last_folder="fluid_composition_folder")
 

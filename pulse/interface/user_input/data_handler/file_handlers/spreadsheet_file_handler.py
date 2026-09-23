@@ -11,38 +11,25 @@ from pulse.interface.user_input.data_handler.imported_data import (
 
 
 class SpreadsheetFileHandler(IOHandler):
-    EXTENSIONS = [".xls", ".xlsx"]
+    READ_EXTENSIONS = [".xls", ".xlsx"]
+    WRITE_EXTENSIONS = [".xlsx"]
 
     @staticmethod
     def read(file_path: Path) -> SpreadsheetData:
-        from openpyxl import load_workbook
         from polars import read_excel
-
-        wb = load_workbook(file_path)
 
         imported_spreadsheet = SpreadsheetData(file_path)
 
-        sheets = list()
-        for sheetname in wb.sheetnames:
-            max_cols = wb[sheetname].max_column
+        sheets_data = read_excel(
+            file_path,
+            sheet_id=0,
+            engine="calamine",
+            has_header=False
+        )
 
-            for i in range(max_cols, 1, -1):
-                cols = list(range(i))
-
-                try:
-                    sheet_data = read_excel(
-                        str(file_path),
-                        sheet_name=sheetname,
-                        columns=cols,
-                        engine="openpyxl",
-                        has_header=False,
-                        infer_schema_length=100,
-                    ).to_numpy()
-                    break
-                except Exception:
-                    pass
-
-            sheet_data = SpreadsheetFileHandler._remove_unnecesary_header_in_data(sheet_data)
+        sheets = []
+        for sheetname, df in sheets_data.items():
+            sheet_data = SpreadsheetFileHandler._remove_unnecesary_header_in_data(df.to_numpy())
             sheets.append(SpreadsheetSheet(sheetname, sheet_data))
 
         imported_spreadsheet.sheets = sheets
@@ -50,13 +37,13 @@ class SpreadsheetFileHandler(IOHandler):
         return imported_spreadsheet
 
     @staticmethod
-    def save(file_path: str | Path, sheet_name: str, data: PolarsDataFrame, index_rows: bool = False, append=False):
+    def save(file_path: str | Path, sheet_name: str, data: PolarsDataFrame, index_rows: bool = False, append: bool = False):
         from pandas import ExcelWriter
 
         mode = "a" if append else "w"
         kwargs = {"if_sheet_exists": "replace"} if append else {}
 
-        with ExcelWriter(str(file_path), mode=mode, **kwargs) as writer:
+        with ExcelWriter(str(file_path), engine="openpyxl", mode=mode, **kwargs) as writer:
             data.to_pandas().to_excel(writer, sheet_name=sheet_name, index=index_rows)
 
     @staticmethod
