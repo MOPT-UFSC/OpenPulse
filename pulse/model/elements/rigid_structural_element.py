@@ -57,7 +57,7 @@ class RigidStructuralElement(StructuralElement):
         -------
         stiffness : array
             Element stiffness matrix in the global coordinate system.
-            
+
         mass : array
             Element mass matrix in the global coordinate system.
 
@@ -70,14 +70,14 @@ class RigidStructuralElement(StructuralElement):
 
 
     def stiffness_matrix_rigid_element(self):
-        
+
         material = self.material
         cross_section = self.cross_section
 
-        E = material.elasticity_modulus
-        Iyy = cross_section.second_moment_area_y
-        # Izz = cross_section.second_moment_area_y
-        # Iyz = cross_section.second_moment_area_yz
+        E = material.elasticity_modulus if material else 0
+        Iyy = cross_section.second_moment_area_y if cross_section else 0
+        Izz = cross_section.second_moment_area_z if cross_section else 0
+        Iyz = cross_section.second_moment_area_yz if cross_section else 0
 
         k = self.element_attributes.k_factor
 

@@ -2,7 +2,6 @@ from typing import TypeVar
 
 import numpy as np
 
-from pulse import app
 from pulse.editor.structures import (
     Arc,
     Bend,
@@ -21,6 +20,9 @@ from pulse.editor.structures import (
     TBeam,
     Valve,
 )
+from pulse.editor.structures.rigid_element import RigidElement
+from pulse.interface import error_title
+from pulse.interface.user_input.project.print_message import PrintMessageInput
 from pulse.utils.math_utils import normalize
 
 from .editor import Editor
@@ -361,28 +363,102 @@ class MainEditor(Editor):
 
         structures = list()
         for point in self.pipeline.selected_points:
-            structure = self._add_generic_linear_structure_to_point(
-                structure_type,
-                deltas,
-                point,
-                **kwargs,
-            )
-            structures.append(structure)
+            if not self.is_endpoint(point):
+                print("branch creation detected")
+                rigid_element_structure, branch_structure = self._add_corrected_t_junction(structure_type, deltas, point, **kwargs)
+
+                structures.append(rigid_element_structure)
+                structures.append(branch_structure)
+            else:
+                print("no branch creation detected")
+                structure = self._add_generic_linear_structure_to_point(structure_type, deltas, point, **kwargs)
+                structures.append(structure)
+
+
         self.pipeline.main_editor._colapse_overloaded_bends()
         return structures
 
-    def _add_generic_linear_structure_to_point(
-        self,
-        structure_type: type[LinearStructure],
-        deltas: tuple[float, float, float],
-        point: Point,
-        **kwargs,
-    ):
+    def _add_generic_linear_structure_to_point(self, structure_type: type[LinearStructure], deltas: tuple[float, float, float], point: Point, **kwargs):
+
         next_point = Point(*(point.coords() + deltas))
         self.next_border.append(next_point)
         structure = structure_type(point, next_point, **kwargs)
         self.pipeline.add_structure(structure)
         return structure
+
+    def _add_corrected_t_junction(self, structure_type: type[LinearStructure], deltas: tuple[float, float, float], point: Point, **kwargs):
+        """
+        Creates a T-junction: a RigidElement sleeve of length D/2 that shifts the
+        branch start away from the main pipe axis, plus the branch itself.
+        """
+        print("add_corrected_t_junction called")
+
+        pipe_before, pipe_after = self._get_junction_pipes(point)
+
+        if pipe_before is None or pipe_after is None:
+            title = "Invalid T-junction"
+            message = "One of the pipes of the junction is 'None'."
+            PrintMessageInput([error_title, title, message])
+            return list()
+
+        if not self._has_matching_diameters(pipe_before, pipe_after):
+            title = "Mismatched diameters at the T-junction"
+            message = "The pipes joined at this point have diameters "
+            message += f"{pipe_before.diameter} and {pipe_after.diameter}. "
+            message += "Both must match to create a branch."
+            PrintMessageInput([error_title, title, message])
+            return list()
+
+
+        diameter = pipe_before.diameter
+        branch_direction = normalize(np.array(deltas, dtype=float))
+
+        rigid_element_length = diameter / 2
+        rigid_element_start = point
+        rigid_element_end = Point(*(point.coords() + branch_direction * rigid_element_length))
+
+        rigid_element = RigidElement(rigid_element_start, rigid_element_end, extra_info=self._rigid_extra_info(pipe_before))
+        self.pipeline.add_structure(rigid_element)
+
+        branch_deltas = tuple(np.array(deltas, dtype=float) - np.array(rigid_element_end - rigid_element_start))
+        branch = self._add_generic_linear_structure_to_point(structure_type, branch_deltas, rigid_element_end, **kwargs)
+
+        return rigid_element, branch
+
+
+    def _get_junction_pipes(self, point: Point) -> tuple[Pipe | None, Pipe | None]:
+        """
+        Finds the two pipes joined at `point`: the one that ends there and the one
+        that starts there.
+
+        Returns
+        -------
+        tuple
+            (pipe_before, pipe_after). Either entry is None when no pipe matches.
+        """
+        pipe_before = None
+        pipe_after = None
+
+        for structure in self.pipeline.structures_of_type(Pipe):
+            if point not in structure.get_points():
+                continue
+
+            if id(structure.end) == id(point):
+                pipe_before = structure
+
+            elif id(structure.start) == id(point):
+                pipe_after = structure
+
+        return pipe_before, pipe_after
+
+    def _has_matching_diameters(self, pipe_before: Pipe, pipe_after: Pipe) -> bool:
+        return np.isclose(pipe_before.diameter, pipe_after.diameter)
+
+    def _rigid_extra_info(self, parent_pipe: Pipe) -> dict:
+        return dict(
+            structural_element_type="rigid_element",
+            material_id=parent_pipe.extra_info.get("material_id"),
+        )
 
     def _colapse_overloaded_bends(self):
         """
