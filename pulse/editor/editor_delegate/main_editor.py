@@ -328,6 +328,22 @@ class MainEditor(Editor):
 
         return connections == 1
 
+    def _is_junction(self, point: Point) -> bool:
+        """
+        A junction is a point where two or more linear structures meet. Only
+        those need the rigid element correction.
+        """
+        connections = 0
+
+        for structure in self.pipeline.structures:
+            if not isinstance(structure,LinearStructure):
+                continue
+
+            if (point == structure.start) or (point == structure.end):
+                connections += 1
+
+        return connections >= 2
+
     def _add_generic_arc(self, structure_type: type[Arc], deltas: tuple[float, float, float], **kwargs):
         if not np.array(deltas).any():  # all zeros
             return []
@@ -363,17 +379,14 @@ class MainEditor(Editor):
 
         structures = list()
         for point in self.pipeline.selected_points:
-            if not self.is_endpoint(point):
-                print("branch creation detected")
-                rigid_element_structure, branch_structure = self._add_corrected_t_junction(structure_type, deltas, point, **kwargs)
-
-                structures.append(rigid_element_structure)
-                structures.append(branch_structure)
+            if self._is_junction(point):
+                new_structures = self._add_corrected_t_junction(structure_type, deltas, point, **kwargs)
             else:
-                print("no branch creation detected")
-                structure = self._add_generic_linear_structure_to_point(structure_type, deltas, point, **kwargs)
-                structures.append(structure)
+                new_structures = [
+                    self._add_generic_linear_structure_to_point(structure_type, deltas, point, **kwargs)
+                ]
 
+            structures.extend(new_structures)
 
         self.pipeline.main_editor._colapse_overloaded_bends()
         return structures
@@ -391,8 +404,6 @@ class MainEditor(Editor):
         Creates a T-junction: a RigidElement sleeve of length D/2 that shifts the
         branch start away from the main pipe axis, plus the branch itself.
         """
-        print("add_corrected_t_junction called")
-
         pipe_before, pipe_after = self._get_junction_pipes(point)
 
         if pipe_before is None or pipe_after is None:
@@ -423,7 +434,7 @@ class MainEditor(Editor):
         branch_deltas = tuple(np.array(deltas, dtype=float) - np.array(rigid_element_end - rigid_element_start))
         branch = self._add_generic_linear_structure_to_point(structure_type, branch_deltas, rigid_element_end, **kwargs)
 
-        return rigid_element, branch
+        return [rigid_element, branch]
 
 
     def _get_junction_pipes(self, point: Point) -> tuple[Pipe | None, Pipe | None]:
