@@ -6,6 +6,7 @@ from pulse.model.elements.expansion_joint_structural_element import ExpansionJoi
 from pulse.model.elements.structural_element import DOF_PER_ELEMENT
 from pulse.model.model import Model
 from pulse.model.node import DOF_PER_NODE_STRUCTURAL
+from pulse.processing.kinematic_coupling import KinematicCoupling
 
 
 class AssemblyStructural:
@@ -31,6 +32,8 @@ class AssemblyStructural:
         self.frequencies = model.frequencies
         self.acoustic_solution = acoustic_solution
         self.no_table = True
+
+        self.constraint = KinematicCoupling(self.preprocessor)
 
         self.prescribed_indexes = self.get_prescribed_indexes()
         self.unprescribed_indexes = self.get_unprescribed_indexes()
@@ -66,7 +69,12 @@ class AssemblyStructural:
                 dofs = starting_position + np.array(internal_dofs)
                 global_prescribed.extend(dofs)
 
-        return global_prescribed
+        self.prescribed_indexes_full = [int(dof) for dof in global_prescribed]
+
+        if not self.constraint.active:
+            return self.prescribed_indexes_full
+
+        return list(self.constraint.full_to_reduced[self.prescribed_indexes_full])
 
 
     def get_prescribed_values(self):
@@ -84,19 +92,19 @@ class AssemblyStructural:
 
         get_unprescribed_indexes : Indexes of the structural free degrees of freedom.
         """
-    
+
         global_prescribed = list()
         list_of_arrays = list()
         if self.frequencies is None:
             number_frequencies = 1
         else:
             number_frequencies = len(self.frequencies)
-        
+
         for (property, *args), data in self.model.properties.nodal_properties.items():
             if property == "prescribed_dofs":
                 # node_id = args
                 values = data["values"]
-                global_prescribed.extend([value for value in values if value is not None])   
+                global_prescribed.extend([value for value in values if value is not None])
 
         try:
 
@@ -131,6 +139,9 @@ class AssemblyStructural:
         get_prescribed_values : Values of the structural degrees of freedom with prescribed displacement or rotation boundary conditions.
         """
         total_dof = DOF_PER_NODE_STRUCTURAL * len(self.preprocessor.nodes)
+        if self.constraint.active:
+            total_dof = self.constraint.n_reduced
+
         all_indexes = np.arange(total_dof)
         return np.delete(all_indexes, self.prescribed_indexes)
 
@@ -143,7 +154,7 @@ class AssemblyStructural:
         ----------
         K : csr_matrix
             The global stiffness matrix of the free DOF.
-            
+
         M : csr_matrix
             The global stiffness matrix of the free DOF.
 
@@ -159,13 +170,54 @@ class AssemblyStructural:
         number_elements = self.preprocessor.number_structural_elements
         self.expansion_joint_elements: dict[int, ExpansionJointStructuralElement] = dict()
 
-        rows, cols = self.preprocessor.get_global_structural_indexes()
-        mat_Ke = np.zeros((number_elements, DOF_PER_ELEMENT, DOF_PER_ELEMENT), dtype=float)
-        mat_Me = np.zeros((number_elements, DOF_PER_ELEMENT, DOF_PER_ELEMENT), dtype=float)
+        if not self.constraint.active:
 
-        for k, (index, element_attributes) in enumerate(self.preprocessor.elements_attributes.items()):
+            rows, cols = self.preprocessor.get_global_structural_indexes()
+            mat_Ke = np.zeros((number_elements, DOF_PER_ELEMENT, DOF_PER_ELEMENT), dtype=float)
+            mat_Me = np.zeros((number_elements, DOF_PER_ELEMENT, DOF_PER_ELEMENT), dtype=float)
 
-            # build the structural element
+            for k, (index, element_attributes) in enumerate(self.preprocessor.elements_attributes.items()):
+
+                element = build_structural_element(element_attributes)
+
+                if element_attributes.structural_element_type == "rigid_element": #this is kept here for now
+                    continue
+
+                elif element_attributes.structural_element_type == "expansion_joint":
+                    self.expansion_joint_elements[index] = element
+
+                else:
+                    mat_Ke[k, :, :], mat_Me[k, :, :] = element.matrices_gcs()
+                    element_attributes.matrices_for_stresses_recover = element.matrices_for_stresses_recover
+
+            full_K = csr_matrix((mat_Ke.flatten(), (rows, cols)), shape=[total_dof, total_dof])
+            full_M = csr_matrix((mat_Me.flatten(), (rows, cols)), shape=[total_dof, total_dof])
+
+            self.full_K = full_K
+            self.full_M = full_M
+
+            K = full_K[self.unprescribed_indexes, :][:, self.unprescribed_indexes]
+            M = full_M[self.unprescribed_indexes, :][:, self.unprescribed_indexes]
+            Kr = full_K[:, self.prescribed_indexes]
+            Mr = full_M[:, self.prescribed_indexes]
+
+            return K, M, Kr, Mr
+
+        # Multi-point-constraint (MPC) assembly: transform each element and assemble it
+        # directly into the reduced global matrices.
+        n_reduced = self.constraint.n_reduced
+
+        i_full = list()
+        j_full = list()
+        data_K_full = list()
+        data_M_full = list()
+        i_red  = list()
+        j_red  = list()
+        data_K_red  = list()
+        data_M_red  = list()
+
+        for index, element_attributes in self.preprocessor.elements_attributes.items():
+
             element = build_structural_element(element_attributes)
 
             if element_attributes.structural_element_type == "rigid_element":
@@ -173,27 +225,48 @@ class AssemblyStructural:
 
             elif element_attributes.structural_element_type == "expansion_joint":
                 self.expansion_joint_elements[index] = element
+                continue
 
-            else:
-                mat_Ke[k, :, :], mat_Me[k, :, :] = element.matrices_gcs()
-                element_attributes.matrices_for_stresses_recover = element.matrices_for_stresses_recover
+            Ke, Me = element.matrices_gcs()
+            element_attributes.matrices_for_stresses_recover = element.matrices_for_stresses_recover
 
-        full_K = csr_matrix((mat_Ke.flatten(), (rows, cols)), shape=[total_dof, total_dof])
-        full_M = csr_matrix((mat_Me.flatten(), (rows, cols)), shape=[total_dof, total_dof])
+            dofs = element.global_dof
+            L, dofs_red = self.constraint.element_transform(element_attributes)
 
-        K = full_K[self.unprescribed_indexes, :][:, self.unprescribed_indexes]
-        M = full_M[self.unprescribed_indexes, :][:, self.unprescribed_indexes]
-        Kr = full_K[:, self.prescribed_indexes]
-        Mr = full_M[:, self.prescribed_indexes]
+            i_full.append(np.repeat(dofs, DOF_PER_ELEMENT))
+            j_full.append(np.tile(dofs, DOF_PER_ELEMENT))
+            data_K_full.append(Ke.reshape(-1))
+            data_M_full.append(Me.reshape(-1))
+
+            Ke_red = L.T @ Ke @ L
+            Me_red = L.T @ Me @ L
+            i_red.append(np.repeat(dofs_red, DOF_PER_ELEMENT))
+            j_red.append(np.tile(dofs_red, DOF_PER_ELEMENT))
+            data_K_red.append(Ke_red.reshape(-1))
+            data_M_red.append(Me_red.reshape(-1))
+
+        full_K = csr_matrix((np.concatenate(data_K_full), (np.concatenate(i_full), np.concatenate(j_full))), shape=[total_dof, total_dof])
+        full_M = csr_matrix((np.concatenate(data_M_full), (np.concatenate(i_full), np.concatenate(j_full))), shape=[total_dof, total_dof])
+
+        red_K = csr_matrix((np.concatenate(data_K_red), (np.concatenate(i_red), np.concatenate(j_red))), shape=[n_reduced, n_reduced])
+        red_M = csr_matrix((np.concatenate(data_M_red), (np.concatenate(i_red), np.concatenate(j_red))), shape=[n_reduced, n_reduced])
+
+        self.full_K = full_K
+        self.full_M = full_M
+
+        K = red_K[self.unprescribed_indexes, :][:, self.unprescribed_indexes]
+        M = red_M[self.unprescribed_indexes, :][:, self.unprescribed_indexes]
+        Kr = red_K[:, self.prescribed_indexes]
+        Mr = red_M[:, self.prescribed_indexes]
 
         return K, M, Kr, Mr
 
 
     def get_expansion_joint_global_matrices(self):
-        
+
         total_dof = DOF_PER_NODE_STRUCTURAL * len(self.preprocessor.nodes)
         number_elements = len(self.expansion_joint_elements)
-        
+
         if self.frequencies is None:
             number_frequencies = 1
         else:
@@ -204,7 +277,7 @@ class AssemblyStructural:
             full_K = [csr_matrix(([], ([], [])), shape=[total_dof, total_dof]) for _ in range(number_frequencies)]
             full_M = csr_matrix(([], ([], [])), shape=[total_dof, total_dof])
 
-        else: 
+        else:
 
             rows = list()
             cols = list()
@@ -218,22 +291,29 @@ class AssemblyStructural:
                 rows.append(e_rows)
                 cols.append(e_cols)
 
-                mat_Ke[:,ind,:,:], mat_Me[ind,:,:] = element.matrices_gcs(self.frequencies) 
+                mat_Ke[:,ind,:,:], mat_Me[ind,:,:] = element.matrices_gcs(self.frequencies)
 
             rows = np.array(rows).flatten()
-            cols = np.array(cols).flatten()   
+            cols = np.array(cols).flatten()
 
             full_K = [csr_matrix((mat_Ke[j,:,:,:].flatten(), (rows, cols)), shape=[total_dof, total_dof]) for j in range(number_frequencies)]
             full_M = csr_matrix((mat_Me.flatten(), (rows, cols)), shape=[total_dof, total_dof])
+
+        self.K_exp_joint_full = full_K
+        self.M_exp_joint_full = full_M
+
+        if self.constraint.active:
+            full_K = [self.constraint.reduce_matrix(sparse_matrix) for sparse_matrix in full_K]
+            full_M = self.constraint.reduce_matrix(full_M)
 
         K = [sparse_matrix[self.unprescribed_indexes, :][:, self.unprescribed_indexes] for sparse_matrix in full_K]
         M = full_M[self.unprescribed_indexes, :][:, self.unprescribed_indexes]
 
         Kr = [sparse_matrix[:, self.prescribed_indexes] for sparse_matrix in full_K]
         Mr = full_M[:, self.prescribed_indexes]
- 
+
         return K, M, Kr, Mr
-        
+
 
     def get_lumped_matrices(self):
         """
@@ -243,10 +323,10 @@ class AssemblyStructural:
         ----------
         K_lump : list
             List of lumped stiffness matrices of the free degree of freedom. Each item of the list is a sparse csr_matrix that corresponds to one frequency of analysis.
-            
+
         M_lump : list
             List of mass matrices of the free degree of freedom. Each item of the list is a sparse csr_matrix that corresponds to one frequency of analysis.
-            
+
         C_lump : list
             List of lumped damping matrices of the free degree of freedom. Each item of the list is a sparse csr_matrix that corresponds to one frequency of analysis.
 
@@ -263,12 +343,12 @@ class AssemblyStructural:
             This flag returns True if the damping matrices are non zero, and False otherwise.
         """
         total_dof = DOF_PER_NODE_STRUCTURAL * len(self.preprocessor.nodes)
-        
+
         if self.frequencies is None:
             cols = 1
         else:
             cols = len(self.frequencies)
-        
+
         K_data = list()
         M_data = list()
         C_data = list()
@@ -363,7 +443,12 @@ class AssemblyStructural:
         full_K = [csr_matrix((data_Klump[:,j], (i_indexes_K, j_indexes_K)), shape=[total_dof, total_dof]) for j in range(cols)]
         full_M = [csr_matrix((data_Mlump[:,j], (i_indexes_M, j_indexes_M)), shape=[total_dof, total_dof]) for j in range(cols)]
         full_C = [csr_matrix((data_Clump[:,j], (i_indexes_C, j_indexes_C)), shape=[total_dof, total_dof]) for j in range(cols)]
-                
+
+        if self.constraint.active:
+            full_K = [self.constraint.reduce_matrix(sparse_matrix) for sparse_matrix in full_K]
+            full_M = [self.constraint.reduce_matrix(sparse_matrix) for sparse_matrix in full_M]
+            full_C = [self.constraint.reduce_matrix(sparse_matrix) for sparse_matrix in full_C]
+
         K_lump = [sparse_matrix[self.unprescribed_indexes, :][:, self.unprescribed_indexes] for sparse_matrix in full_K]
         M_lump = [sparse_matrix[self.unprescribed_indexes, :][:, self.unprescribed_indexes] for sparse_matrix in full_M]
         C_lump = [sparse_matrix[self.unprescribed_indexes, :][:, self.unprescribed_indexes] for sparse_matrix in full_C]
@@ -386,7 +471,7 @@ class AssemblyStructural:
             Default is 0.
 
         loads_matrix3D : bool, optional
-            
+
             Default is False.
 
         Returns
@@ -405,6 +490,9 @@ class AssemblyStructural:
             position = element.global_dof
             loads[position] += element.force_vector_stress_stiffening()
 
+        if self.constraint.active:
+            loads = self.constraint.reduce_load(loads)
+
         return loads[self.unprescribed_indexes,:]
 
 
@@ -419,7 +507,7 @@ class AssemblyStructural:
             Default is 0.
 
         loads_matrix3D : bool, optional
-            
+
             Default is False.
 
         Returns
@@ -434,7 +522,7 @@ class AssemblyStructural:
 
             _frequencies = np.array([0.], dtype=float)
             loads = np.zeros((total_dof, cols), dtype=complex)
-        
+
             # elementary loads - element integration
             for index, element_attributes in self.preprocessor.elements_attributes.items():
                 element = build_structural_element(element_attributes)
@@ -470,7 +558,10 @@ class AssemblyStructural:
 
         except Exception as _error_log:
             print(str(_error_log))
-                  
+
+        if self.constraint.active:
+            loads = self.constraint.reduce_load(loads)
+
         return loads[self.unprescribed_indexes,:]
 
 
@@ -485,7 +576,7 @@ class AssemblyStructural:
             Default is 0.
 
         loads_matrix3D : bool, optional
-            
+
             Default is False.
 
         Returns
@@ -493,7 +584,7 @@ class AssemblyStructural:
         array
             Loads vectors. Each column corresponds to a frequency of analysis.
         """
-        
+
         total_dof = DOF_PER_NODE_STRUCTURAL * len(self.preprocessor.nodes)
 
         if self.frequencies is None or static_analysis:
@@ -511,14 +602,14 @@ class AssemblyStructural:
         # distributed loads
         for element_attributes in self.preprocessor.elements_attributes.values():
             element = build_structural_element(element_attributes)
-            position = element.global_dof 
+            position = element.global_dof
             loads[position] += element.get_distributed_load()
 
         # nodal loads
         for (property, *args), data in self.model.properties.nodal_properties.items():
             if property != "nodal_loads":
                 continue
-            
+
             if not isinstance(data, dict):
                 continue
 
@@ -543,8 +634,11 @@ class AssemblyStructural:
         #             temp_loads = [np.zeros_like(_frequencies) if bc is None else np.ones_like(_frequencies)*bc for bc in values]
         #         loads[position, :] += temp_loads
 
+        if self.constraint.active:
+            loads = self.constraint.reduce_load(loads)
+
         loads = loads[self.unprescribed_indexes, :]
-        
+
         # acoustic-structural loads
         if self.acoustic_solution is not None:
             for element_attributes in self.preprocessor.elements_attributes.values():
@@ -556,6 +650,9 @@ class AssemblyStructural:
                 element = build_structural_element(element_attributes)
                 pressure_loads[position, :] += element.force_vector_acoustic_gcs(_frequencies, pressure, pressure_external)
 
+        if self.constraint.active:
+            pressure_loads = self.constraint.reduce_load(pressure_loads)
+
         pressure_loads = pressure_loads[self.unprescribed_indexes, :]
 
         if loads_matrix3D:
@@ -565,7 +662,7 @@ class AssemblyStructural:
             loads += pressure_loads
 
         return loads
-    
+
 
     def get_bc_array_for_all_frequencies(self, loaded_table: bool, values: list[np.ndarray | complex | None]):
         """
@@ -578,7 +675,7 @@ class AssemblyStructural:
             Default is 0.
 
         loads_matrix3D : bool, optional
-            
+
             Default is False.
 
         Returns

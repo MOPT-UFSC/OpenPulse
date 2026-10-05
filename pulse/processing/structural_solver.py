@@ -91,6 +91,9 @@ class StructuralSolver:
                 full_solution[self.prescribed_indexes, :] = np.zeros((len(self.prescribed_values),cols))
             else:
                 full_solution[self.prescribed_indexes, :] = self.array_prescribed_values[:, 0:cols]
+
+        full_solution = self.assembly.constraint.expand(full_solution)
+
         return full_solution
 
 
@@ -502,12 +505,14 @@ class StructuralSolver:
             rows = len(self.frequencies)
             _frequencies = self.frequencies
 
-        cols = len(self.prescribed_indexes)
+        prescribed_indexes_full = self.assembly.prescribed_indexes_full
+        cols = len(prescribed_indexes_full)
         _reactions = np.zeros((rows, cols), dtype=complex)
 
         Ut = self.solution.T
-        Kr = self.Kr.toarray()
-        Mr = self.Mr.toarray() + self.Mr_exp_joint.toarray()
+        Kr = self.assembly.full_K[:, prescribed_indexes_full].toarray()
+        Mr = self.assembly.full_M[:, prescribed_indexes_full].toarray() \
+             + self.assembly.M_exp_joint_full[:, prescribed_indexes_full].toarray()
         Ut_Mr = Ut @ Mr
 
         n_freq = len(_frequencies)
@@ -518,7 +523,8 @@ class StructuralSolver:
             logging.info(f"Evaluating the structural reactions for constrained dofs [{j+1}/{n_freq}]")
 
             omega = 2*np.pi*freq
-            Ut_Kr = Ut[j,:] @ (Kr + self.Kr_exp_joint[j].toarray())
+            Kr_exp_joint = self.assembly.K_exp_joint_full[j][:, prescribed_indexes_full].toarray()
+            Ut_Kr = Ut[j,:] @ (Kr + Kr_exp_joint)
 
             F_K = Ut_Kr
             F_M = -(omega**2) * Ut_Mr[j, :]
@@ -526,7 +532,7 @@ class StructuralSolver:
 
             _reactions[j, :] = F_K + F_M + F_C
 
-        for i, prescribed_index in enumerate(self.prescribed_indexes):
+        for i, prescribed_index in enumerate(prescribed_indexes_full):
             self.reactions_at_constrained_dofs[prescribed_index] =  _reactions[:,i]
 
 

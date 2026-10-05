@@ -69,23 +69,12 @@ class RigidStructuralElement(StructuralElement):
         return stiffness, mass
 
 
-    def stiffness_matrix_rigid_element(self):
-
-        material = self.material
-        cross_section = self.cross_section
-
-        E = material.elasticity_modulus if material else 0
-        Iyy = cross_section.second_moment_area_y if cross_section else 0
-        Izz = cross_section.second_moment_area_z if cross_section else 0
-        Iyz = cross_section.second_moment_area_yz if cross_section else 0
-
-        k = self.element_attributes.k_factor
-
+    def translation_constraint_matrix(self) -> np.ndarray:
         dx = self.delta_x
         dy = self.delta_y
         dz = self.delta_z
 
-        T = np.array([
+        self.T_JR = np.array([
             [ 1, 0, 0,   0,  dz, -dy ],
             [ 0, 1, 0, -dz,   0,  dx ],
             [ 0, 0, 1,  dy, -dx,   0 ],
@@ -94,13 +83,62 @@ class RigidStructuralElement(StructuralElement):
             [ 0, 0, 0,   0,   0,   1 ]
             ], dtype = float)
 
-        stiffness = ((E * Iyy) / (k - 1)) * np.block([
-            [T * k, T * k],
-            [T * k, T * k]
-            ], dtype=float)
-
-        return stiffness
+        return self.T_JR
 
 
-    def mass_matrix_rigid_element(self):
+    @property
+    def master_dofs(self) -> np.ndarray:
+        """Structural dofs of the master (first) node."""
+        return self.first_node.structural_global_dof
+
+    @property
+    def slave_dofs(self) -> np.ndarray:
+        """Structural dofs of the slave (last) node."""
+        return self.last_node.structural_global_dof
+
+
+    def rotation_spring_stiffness(self) -> tuple[float, float, float]:
+        """
+        Rotational stiffness of the joint springs (out-of-plane bending,
+        in-plane bending and torsion).
+
+        A zero value keeps the joint rotationally rigid. A finite value adds
+        the joint flexibility (shell/ovalization effects), so the relative
+        rotation between J and S grows with the applied moment.
+        """
+        material = self.material
+        cross_section = self.cross_section
+
+        E = material.elasticity_modulus if material else 0
+        Iyy = cross_section.second_moment_area_y if cross_section else 0
+        Izz = cross_section.second_moment_area_z if cross_section else 0
+        Iyz = cross_section.second_moment_area_yz if cross_section else 0
+
+        k_ip = 0
+        k_op = 0
+        k_t = 0
+
+        return k_ip, k_op, k_t
+
+
+    def rotation_spring_matrix(self) -> np.ndarray:
+        """
+        Rotational-spring stiffness of the joint, in the slave node coordinate
+        system: ``diag([0, 0, 0, k_t, k_ip, k_op])``. The translational entries
+        are zero (always rigid); a finite rotational entry adds flexibility.
+        """
+        k_ip, k_op, k_t = self.rotation_spring_stiffness()
+        return np.diag([0.0, 0.0, 0.0, k_t, k_ip, k_op])
+
+    def eliminated_mask(self) -> np.ndarray:
+        """
+        Which slave dofs are rigidly eliminated (True) and which stay as
+        unknowns (False). Translations are always rigid; rotations become
+        flexible once their spring stiffness is finite.
+        """
+        k_ip, k_op, k_t = self.rotation_spring_stiffness()
+        return np.array([True, True, True, k_t == 0, k_ip == 0, k_op == 0], dtype=bool)
+
+
+    def get_reduced_mass_matrix_element(self):
         return 0.
