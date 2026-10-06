@@ -147,7 +147,7 @@ class ResultsRenderWidget(AnimatedRenderWidget):
         self.set_tube_actors_transparency(self.transparency)
 
     def update_colors_and_deformation(self, render=True):
-        if self.tubes_actor is None:
+        if (self.tubes_actor is None) or (self.lines_actor is None):
             return
 
         project = app().project
@@ -202,6 +202,9 @@ class ResultsRenderWidget(AnimatedRenderWidget):
 
         self.colorbar_actor.SetTitle(unit_label)
         self.colorbar_actor.SetLookupTable(color_table)
+
+        self.lines_actor.show_deformed = deformed
+        self.lines_actor.build()
 
         self.tubes_actor.show_deformed = deformed
         self.tubes_actor.update_element_coordinates_and_rotations()
