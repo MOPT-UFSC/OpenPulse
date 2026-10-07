@@ -1,3 +1,4 @@
+import numpy as np
 from molde.actors import GhostActor
 from molde.colors import PURPLE_7
 from molde.poly_data import LinesData
@@ -6,7 +7,6 @@ from vtkmodules.vtkCommonCore import vtkCharArray, vtkIntArray, vtkUnsignedIntAr
 from vtkmodules.vtkRenderingCore import vtkPolyDataMapper
 
 from pulse import app
-import numpy as np
 
 
 class ElementLinesActor(GhostActor):
@@ -17,8 +17,6 @@ class ElementLinesActor(GhostActor):
         self.hidden_elements = kwargs.get("hidden_elements", set())
 
         self.rigid_elements = self.model.get_rigid_elements()
-        self.deformed_coordinates = app().project.model.preprocessor.deformed_coordinates
-
         self.build()
 
     @property
@@ -41,6 +39,7 @@ class ElementLinesActor(GhostActor):
 
         all_elements = np.array(list(self.elements_attributes.keys()), dtype=int)
         visible_elements = all_elements[~np.isin(all_elements, self.hidden_elements)]
+        deformed_coordinates = app().project.model.preprocessor.deformed_coordinates
 
         self._key_index = {j: i for i, j in enumerate(visible_elements)}
 
@@ -55,8 +54,8 @@ class ElementLinesActor(GhostActor):
             first_node = element_attributes.first_node
             last_node = element_attributes.last_node
 
-            x0, y0, z0 = self.deformed_coordinates[first_node.index, 1:] if self.show_deformed else first_node.coordinates
-            x1, y1, z1 = self.deformed_coordinates[ last_node.index, 1:] if self.show_deformed else last_node.coordinates
+            x0, y0, z0 = deformed_coordinates[first_node.index, 1:] if self.show_deformed else first_node.coordinates
+            x1, y1, z1 = deformed_coordinates[last_node.index, 1:] if self.show_deformed else last_node.coordinates
 
             lines.append((x0, y0, z0, x1, y1, z1))
             line_id = self.model.mesh.get_line_from_element(elem_id)
@@ -122,11 +121,10 @@ class ElementLinesActor(GhostActor):
         colors: vtkCharArray = data.GetCellData().GetArray("colors")
 
         for i in range(n_cells):
-
             try:
                 element = element_indexes.GetValue(i)
                 entity = entity_indexes.GetValue(i)
-               
+
                 if (entity in lines) or (element in elements):
                     colors.SetTuple3(i, *color)
 

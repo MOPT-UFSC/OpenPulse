@@ -14,7 +14,6 @@ class NodesActor(GhostActor):
         self.user_preferences = app().main_window.config.user_preferences
         self.nodes = self.project.model.preprocessor.nodes
 
-        self.deformed_coordinates = app().project.model.preprocessor.deformed_coordinates
 
         self.hidden_nodes = kwargs.get('hidden_nodes', set())
         self.show_deformed = show_deformed
@@ -33,8 +32,10 @@ class NodesActor(GhostActor):
         node_index.SetName("node_index")
         data.Allocate(len(visible_nodes))
 
+        deformed_coordinates = app().project.model.preprocessor.deformed_coordinates
+
         for i, node in enumerate(visible_nodes.values()):
-            xyz = self.deformed_coordinates[node.index, 1:] if self.show_deformed else node.coordinates
+            xyz = deformed_coordinates[node.index, 1:] if self.show_deformed else node.coordinates
             points.InsertNextPoint(xyz)
             data.InsertNextCell(VTK_VERTEX, 1, [i])
             node_index.InsertNextTuple1(node.index)
