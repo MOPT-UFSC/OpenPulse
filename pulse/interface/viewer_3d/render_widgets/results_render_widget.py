@@ -22,7 +22,6 @@ from pulse.interface.viewer_3d.coloring.color_table import ColorTable
 from pulse.interface.viewer_3d.render_tools import RenderTool, SelectionTool
 from pulse.model import AnalysisID
 from pulse.utils.interface_utils import VisualizationFilter
-from pulse.utils.time_utils import function_timer
 
 from ._mesh_picker import MeshPicker
 from ._model_info_text import (
@@ -150,6 +149,15 @@ class ResultsRenderWidget(AnimatedRenderWidget):
         if self.tubes_actor is None:
             return
 
+        if self.lines_actor is None:
+            return
+
+        if self.nodes_actor is None:
+            return
+
+        if self.points_actor is None:
+            return
+
         project = app().project
         if project is None:
             return
@@ -202,6 +210,15 @@ class ResultsRenderWidget(AnimatedRenderWidget):
 
         self.colorbar_actor.SetTitle(unit_label)
         self.colorbar_actor.SetLookupTable(color_table)
+
+        self.points_actor.show_deformed = deformed
+        self.points_actor.build()
+
+        self.nodes_actor.show_deformed = deformed
+        self.nodes_actor.build()
+
+        self.lines_actor.show_deformed = deformed
+        self.lines_actor.build()
 
         self.tubes_actor.show_deformed = deformed
         self.tubes_actor.update_element_coordinates_and_rotations()
