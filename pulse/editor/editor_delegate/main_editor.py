@@ -20,7 +20,7 @@ from pulse.editor.structures import (
     TBeam,
     Valve,
 )
-from pulse.editor.structures.rigid_element import RigidElement
+from pulse.editor.structures.coupling_element import CouplingElement
 from pulse.interface import error_title
 from pulse.interface.user_input.project.print_message import PrintMessageInput
 from pulse.utils.math_utils import normalize
@@ -331,7 +331,7 @@ class MainEditor(Editor):
     def _is_junction(self, point: Point) -> bool:
         """
         A junction is a point where two or more linear structures meet. Only
-        those need the rigid element correction.
+        those need the coupling element correction.
         """
         connections = 0
 
@@ -401,7 +401,7 @@ class MainEditor(Editor):
 
     def _add_corrected_t_junction(self, structure_type: type[LinearStructure], deltas: tuple[float, float, float], point: Point, **kwargs):
         """
-        Creates a T-junction: a RigidElement sleeve of length D/2 that shifts the
+        Creates a T-junction: a CouplingElement of length D/2 that shifts the
         branch start away from the main pipe axis, plus the branch itself.
         """
         pipe_before, pipe_after = self._get_junction_pipes(point)
@@ -424,17 +424,17 @@ class MainEditor(Editor):
         diameter = pipe_before.diameter
         branch_direction = normalize(np.array(deltas, dtype=float))
 
-        rigid_element_length = diameter / 2
-        rigid_element_start = point
-        rigid_element_end = Point(*(point.coords() + branch_direction * rigid_element_length))
+        coupling_element_length = diameter / 2
+        coupling_element_start = point
+        coupling_element_end = Point(*(point.coords() + branch_direction * coupling_element_length))
 
-        rigid_element = RigidElement(rigid_element_start, rigid_element_end, extra_info=self._rigid_extra_info(pipe_before))
-        self.pipeline.add_structure(rigid_element)
+        coupling_element = CouplingElement(coupling_element_start, coupling_element_end, extra_info=self._coupling_extra_info(pipe_before))
+        self.pipeline.add_structure(coupling_element)
 
-        branch_deltas = tuple(np.array(deltas, dtype=float) - np.array(rigid_element_end - rigid_element_start))
-        branch = self._add_generic_linear_structure_to_point(structure_type, branch_deltas, rigid_element_end, **kwargs)
+        branch_deltas = tuple(np.array(deltas, dtype=float) - np.array(coupling_element_end - coupling_element_start))
+        branch = self._add_generic_linear_structure_to_point(structure_type, branch_deltas, coupling_element_end, **kwargs)
 
-        return [rigid_element, branch]
+        return [coupling_element, branch]
 
 
     def _get_junction_pipes(self, point: Point) -> tuple[Pipe | None, Pipe | None]:
@@ -465,9 +465,9 @@ class MainEditor(Editor):
     def _has_matching_diameters(self, pipe_before: Pipe, pipe_after: Pipe) -> bool:
         return np.isclose(pipe_before.diameter, pipe_after.diameter)
 
-    def _rigid_extra_info(self, parent_pipe: Pipe) -> dict:
+    def _coupling_extra_info(self, parent_pipe: Pipe) -> dict:
         return dict(
-            structural_element_type="rigid_element",
+            structural_element_type="coupling_element",
             material_id=parent_pipe.extra_info.get("material_id"),
         )
 

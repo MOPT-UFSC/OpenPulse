@@ -1668,7 +1668,7 @@ class Preprocessor:
         for index, element_attributes in self.elements_attributes.items():
             e_type = element_attributes.structural_element_type
 
-            if e_type in ["beam_1", "expansion_joint", "rigid_element"]:
+            if e_type in ["beam_1", "expansion_joint", "coupling_element"]:
                 continue
 
             if e_type == "pipe_1" and element_attributes.is_section_variable:

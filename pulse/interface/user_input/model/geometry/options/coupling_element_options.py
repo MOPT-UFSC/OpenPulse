@@ -5,13 +5,13 @@ if TYPE_CHECKING:
 
 
 
-from pulse.editor.structures.rigid_element import RigidElement
+from pulse.editor.structures.coupling_element import CouplingElement
 
 from .structure_options import StructureOptions
 
 
-class RigidElementOptions(StructureOptions):
-    structure_type = RigidElement
+class CouplingElementOptions(StructureOptions):
+    structure_type = CouplingElement
 
     def get_kwargs(self) -> dict:
         return dict(
@@ -31,6 +31,6 @@ class RigidElementOptions(StructureOptions):
 
     def _get_extra_info(self):
         return dict(
-            structural_element_type="rigid_element",
+            structural_element_type="coupling_element",
             material_id=self.geometry_designer_widget.current_material_id,
         )

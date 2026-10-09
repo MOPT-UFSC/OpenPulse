@@ -8,9 +8,9 @@ from pulse.model.node import DOF_PER_NODE_STRUCTURAL
 
 class KinematicCoupling:
     """
-    Master-slave (MPC) coupling built from the rigid elements.
+    Master-slave (MPC) coupling built from the coupling elements.
 
-    Each rigid element ties its slave (last) node to its master (first) node
+    Each coupling element ties its slave (last) node to its master (first) node
     through the rigid-body relation ``u_slave = T_JR @ u_master``. The slave
     dofs are eliminated from the global system and expressed as a function of
     the master dofs (MPC / kinematic transformation method).
@@ -25,7 +25,7 @@ class KinematicCoupling:
 
         couplings = []
         for element_attributes in self.preprocessor.elements_attributes.values():
-            if element_attributes.structural_element_type != "rigid_element":
+            if element_attributes.structural_element_type != "coupling_element":
                 continue
 
             element = build_structural_element(element_attributes)

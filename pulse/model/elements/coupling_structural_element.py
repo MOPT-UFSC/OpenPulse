@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from pulse.model.elements.element_attributes import ElementAttributes
 
 
-class RigidStructuralElement(StructuralElement):
+class CouplingStructuralElement(StructuralElement):
     """A structural element.
     This class creates a structural element from input data.
 
@@ -51,7 +51,7 @@ class RigidStructuralElement(StructuralElement):
     def matrices_gcs(self):
         """
         This method returns the element stiffness and mass matrices of
-        the rigid element.
+        the coupling element.
 
         Returns
         -------
@@ -63,8 +63,8 @@ class RigidStructuralElement(StructuralElement):
 
         """
 
-        stiffness = self.stiffness_matrix_rigid_element()
-        mass = self.mass_matrix_rigid_element()
+        stiffness = self.stiffness_matrix_coupling_element()
+        mass = self.mass_matrix_coupling_element()
 
         return stiffness, mass
 

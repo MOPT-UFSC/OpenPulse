@@ -1853,7 +1853,7 @@
                </item>
                <item>
                 <property name="text">
-                 <string>Rigid Element</string>
+                 <string>Coupling Element</string>
                 </property>
                </item>
               </widget>

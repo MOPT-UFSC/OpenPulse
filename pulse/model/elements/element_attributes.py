@@ -40,7 +40,7 @@ class ElementAttributes:
 
     def reset_structural_element_attributes(self):
 
-        self.structural_element_type: Literal["pipe_1", "beam_1", "expansion_joint", "valve", "rigid_element"] = "pipe_1"
+        self.structural_element_type: Literal["pipe_1", "beam_1", "expansion_joint", "valve", "coupling_element"] = "pipe_1"
 
         # pipe-related attributes
         self.wall_formulation: str = "thin_wall"
@@ -64,7 +64,7 @@ class ElementAttributes:
         # perforated plate data
         self.perforated_plate_data: None | PerforatedPlateData = None
 
-        # rigid element
+        # coupling element
         self.k_factor: float | None = None
 
         # stress stiffening attributes

@@ -7,7 +7,7 @@ from vtkmodules.vtkRenderingCore import vtkActor
 
 from pulse import ICON_DIR, app
 from pulse.interface.viewer_3d.actors import EditorPointsActor, EditorSelectedPointsActor, EditorStagedPointsActor
-from pulse.interface.viewer_3d.actors.editor_actors.rigid_element_actor import RigidElementsActor
+from pulse.interface.viewer_3d.actors.editor_actors.coupling_element_actor import CouplingElementsActor
 from pulse.interface.viewer_3d.render_tools import SelectionTool
 from pulse.utils.interface_utils import VisualizationFilter
 
@@ -27,7 +27,7 @@ class GeometryRenderWidget(CommonRenderWidget):
         self.control_points_actor = None
         self.staged_points_actor = None
         self.selected_points_actor = None
-        self.rigid_elements_actor = None
+        self.coupling_elements_actor = None
 
         # It is better for an editor to have parallel projection
         self.renderer.GetActiveCamera().SetParallelProjection(True)
@@ -57,12 +57,12 @@ class GeometryRenderWidget(CommonRenderWidget):
         self.staged_points_actor = EditorStagedPointsActor()
         self.selected_points_actor = EditorSelectedPointsActor()
 
-        self.rigid_elements_actor = RigidElementsActor(self.pipeline)
+        self.coupling_elements_actor = CouplingElementsActor(self.pipeline)
 
         # The order matters. It defines wich points will appear first.
         self.add_actors(
             self.pipeline_actor,
-            self.rigid_elements_actor,
+            self.coupling_elements_actor,
             self.control_points_actor,
             self.staged_points_actor,
             self.selected_points_actor,
@@ -210,7 +210,7 @@ class GeometryRenderWidget(CommonRenderWidget):
         self.staged_points_actor.SetVisibility(visualization.points)
         self.selected_points_actor.SetVisibility(visualization.points)
         self.pipeline_actor.SetVisibility(visualization.tubes)
-        self.rigid_elements_actor.SetVisibility(visualization.tubes)
+        self.coupling_elements_actor.SetVisibility(visualization.tubes)
         opacity = 0.9 if visualization.transparent else 1
         self.pipeline_actor.GetProperty().SetOpacity(opacity)
         self.update()
@@ -221,7 +221,7 @@ class GeometryRenderWidget(CommonRenderWidget):
             self.staged_points_actor,
             self.selected_points_actor,
             self.pipeline_actor,
-            self.rigid_elements_actor,
+            self.coupling_elements_actor,
         ]
         return all([actor is not None for actor in actors])
 
@@ -230,13 +230,13 @@ class GeometryRenderWidget(CommonRenderWidget):
         self.renderer.RemoveActor(self.control_points_actor)
         self.renderer.RemoveActor(self.staged_points_actor)
         self.renderer.RemoveActor(self.selected_points_actor)
-        self.renderer.RemoveActor(self.rigid_elements_actor)
+        self.renderer.RemoveActor(self.coupling_elements_actor)
 
         self.pipeline_actor = None
         self.control_points_actor = None
         self.staged_points_actor = None
         self.selected_points_actor = None
-        self.rigid_elements_actor = None
+        self.coupling_elements_actor = None
 
     def click_callback(self, x, y):
         self.mouse_click = x, y
@@ -288,10 +288,10 @@ class GeometryRenderWidget(CommonRenderWidget):
         return control_points
 
     def _pick_structures(self, x, y):
-        rigid_indexes = self._pick_property(x, y, "cell_identifier", self.rigid_elements_actor)
-        if rigid_indexes:
+        coupling_indexes = self._pick_property(x, y, "cell_identifier", self.coupling_elements_actor)
+        if coupling_indexes:
             try:
-                return [self.pipeline.structures[i] for i in rigid_indexes]
+                return [self.pipeline.structures[i] for i in coupling_indexes]
             except IndexError:
                 return list()
 

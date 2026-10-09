@@ -5,19 +5,19 @@ from vtkmodules.vtkRenderingCore import vtkPolyDataMapper
 
 from molde.actors import GhostActor
 from pulse.utils.cell_utils import fill_cell_identifier, paint_data
-from pulse.editor.structures.rigid_element import RigidElement
+from pulse.editor.structures.coupling_element import CouplingElement
 
 
-class RigidElementActor(GhostActor):
-    def __init__(self, rigid: RigidElement):
+class CouplingElementActor(GhostActor):
+    def __init__(self, coupling: CouplingElement):
         super().__init__()
-        self.rigid = rigid
+        self.coupling = coupling
         self.create_geometry()
         self.make_ghost()
 
     def create_geometry(self):
-        start = self.rigid.start.coords()
-        end = self.rigid.end.coords()
+        start = self.coupling.start.coords()
+        end = self.coupling.end.coords()
 
         source = vtkLineSource()
         source.SetPoint1(*start)
@@ -25,7 +25,7 @@ class RigidElementActor(GhostActor):
         source.Update()
 
         data = source.GetOutput()
-        paint_data(data, self.rigid.color.to_rgb())
+        paint_data(data, self.coupling.color.to_rgb())
 
         mapper = vtkPolyDataMapper()
         mapper.SetInputData(data)
@@ -43,7 +43,7 @@ class RigidElementActor(GhostActor):
         mapper.SetRelativeCoincidentTopologyPointOffsetParameter(offset)
 
 
-class RigidElementsActor(GhostActor):
+class CouplingElementsActor(GhostActor):
     def __init__(self, pipeline):
         super().__init__()
         self.build(pipeline)
@@ -54,7 +54,7 @@ class RigidElementsActor(GhostActor):
         has_data = False
 
         for i, structure in enumerate(pipeline.all_structures()):
-            if not isinstance(structure, RigidElement):
+            if not isinstance(structure, CouplingElement):
                 continue
 
             start = structure.start.coords()

@@ -16,7 +16,7 @@ class ElementLinesActor(GhostActor):
         self.show_deformed = show_deformed
         self.hidden_elements = kwargs.get("hidden_elements", set())
 
-        self.rigid_elements = self.model.get_rigid_elements()
+        self.coupling_elements = self.model.get_coupling_elements()
         self.deformed_coordinates = app().project.model.preprocessor.deformed_coordinates
 
         self.build()
@@ -84,23 +84,23 @@ class ElementLinesActor(GhostActor):
         self.GetProperty().SetLineWidth(6)
         self.make_ghost()
 
-    # def _get_rigid_element_ids(self):
-    #     rigid_ids = set()
+    # def _get_coupling_element_ids(self):
+    #     coupling_ids = set()
     #     for structure in self.project.pipeline.structures:
-    #         if structure.extra_info.get("structural_element_type") == "rigid_element":
-    #             rigid_ids.update(self.mesh.elements_from_line.get(structure.tag))
+    #         if structure.extra_info.get("structural_element_type") == "coupling_element":
+    #             coupling_ids.update(self.mesh.elements_from_line.get(structure.tag))
 
-    #     return rigid_ids
+    #     return coupling_ids
 
     def clear_colors(self):
         data = self.GetMapper().GetInput()
         lines_color = self.user_preferences.lines_color.to_rgb()
         set_polydata_colors(data, lines_color)
 
-        if not self.rigid_elements:
+        if not self.coupling_elements:
             return
 
-        self.set_color(PURPLE_7.to_rgb(), elements=self.rigid_elements)
+        self.set_color(PURPLE_7.to_rgb(), elements=self.coupling_elements)
 
     def set_color(self, color, elements=None, lines=None):
         mapper = self.GetMapper()

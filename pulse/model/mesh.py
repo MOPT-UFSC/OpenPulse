@@ -1,7 +1,7 @@
 
 from typing import TYPE_CHECKING
 
-from pulse.editor.structures.rigid_element import RigidElement
+from pulse.editor.structures.coupling_element import CouplingElement
 from pulse.interface.handler.geometry_handler import GeometryHandler
 from pulse.interface.user_input.numeric_checks.unit_utilities import convert_length_unit
 from pulse.model.data_classes.project_setup_data_classes import MesherSetup, ImportType
@@ -149,9 +149,9 @@ class Mesh:
 
             # Apply per-structure mesh constraints after removing the
             # duplicates, since removeAllDuplicates resets the transfinite
-            # curve settings (e.g. the rigid element 2-node constraint).
+            # curve settings (e.g. the coupling element 2-node constraint).
             for structure in self.project.pipeline.structures:
-                if isinstance(structure, RigidElement):
+                if isinstance(structure, CouplingElement):
                     structure.define_gmsh_mesh_constraints()
 
             # generate mesh for 1D elements

@@ -7,7 +7,7 @@ from vtkmodules.vtkCommonDataModel import vtkPolyData
 from vtkmodules.vtkFiltersCore import vtkAppendPolyData, vtkPolyDataNormals
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
-from pulse.editor.structures import RigidElement
+from pulse.editor.structures import CouplingElement
 from pulse.utils.cell_utils import (
     fill_cell_identifier,
     paint_data,
@@ -28,7 +28,7 @@ class PipelineActor(vtkActor):
         has_data = False
 
         for i, shape in enumerate(self.pipeline.all_structures()):
-            if isinstance(shape, RigidElement):
+            if isinstance(shape, CouplingElement):
                 continue
 
             shape_data = shape.as_vtk().GetMapper().GetInput()

@@ -160,7 +160,7 @@ class BeforeRun():
 
             if cross_section is None:
                 #TODO: remove as soon as possible
-                if structural_element_type == "rigid_element":
+                if structural_element_type == "coupling_element":
                     continue
 
                 if structural_element_type:
@@ -216,7 +216,7 @@ class BeforeRun():
             if element_attributes.cross_section is None:
 
                 #TODO: remove as soon as possible
-                if structural_element_type == "rigid_element":
+                if structural_element_type == "coupling_element":
                     continue
 
                 self.check_set_crossSection = True

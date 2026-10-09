@@ -248,7 +248,7 @@ class AssemblyAcoustic:
 
         for k, (elem_index, element_attributes) in enumerate(self.preprocessor.elements_attributes.items()):
 
-            if element_attributes.structural_element_type in ["beam_1", "rigid_element"]:
+            if element_attributes.structural_element_type in ["beam_1", "coupling_element"]:
                 continue
 
             start = elem_index * ENTRIES_PER_ELEMENT
@@ -407,7 +407,7 @@ class AssemblyAcoustic:
                 continue
 
             structural_element_type = self.preprocessor.get_structural_element_type(element_ids[0])
-            if structural_element_type in ["beam_1", "rigid_element"]:
+            if structural_element_type in ["beam_1", "coupling_element"]:
                 continue
 
             cross_section = self.preprocessor.get_element_cross_section(element_ids[0])
@@ -576,7 +576,7 @@ class AssemblyAcoustic:
 
         for elem_id, element_attributes in self.preprocessor.elements_attributes.items():
 
-            if element_attributes.structural_element_type in ["beam_1", "rigid_element"]:
+            if element_attributes.structural_element_type in ["beam_1", "coupling_element"]:
                 continue
 
             element_attributes.acoustic_element_formulation = "FEM"

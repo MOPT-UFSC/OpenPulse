@@ -180,7 +180,7 @@ class AssemblyStructural:
 
                 element = build_structural_element(element_attributes)
 
-                if element_attributes.structural_element_type == "rigid_element": #this is kept here for now
+                if element_attributes.structural_element_type == "coupling_element": #this is kept here for now
                     continue
 
                 elif element_attributes.structural_element_type == "expansion_joint":
@@ -220,7 +220,7 @@ class AssemblyStructural:
 
             element = build_structural_element(element_attributes)
 
-            if element_attributes.structural_element_type == "rigid_element":
+            if element_attributes.structural_element_type == "coupling_element":
                 continue
 
             elif element_attributes.structural_element_type == "expansion_joint":

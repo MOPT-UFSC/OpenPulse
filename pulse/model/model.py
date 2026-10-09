@@ -324,16 +324,16 @@ class Model:
         # dt = time()-t0
         # print(f"Time to process_geometry_and_mesh: {dt} [s]")
 
-    def get_rigid_elements(self):
-        rigid_elements = set()
+    def get_coupling_elements(self):
+        coupling_elements = set()
         for line_id, elements_from_line in self.mesh.elements_from_line.items():
             structural_element_type = self.properties._get_property("structural_element_type", line_id=line_id)
-            if structural_element_type != "rigid_element":
+            if structural_element_type != "coupling_element":
                 continue
 
-            rigid_elements |= set(elements_from_line)
+            coupling_elements |= set(elements_from_line)
 
-        return rigid_elements
+        return coupling_elements
 
     def set_acoustic_solution(self, solution: np.ndarray):
         self.acoustic_solution = solution

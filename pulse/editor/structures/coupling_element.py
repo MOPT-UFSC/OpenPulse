@@ -6,7 +6,7 @@ from pulse.editor.structures.linear_structure import LinearStructure
 from pulse.editor.structures.point import Point
 
 
-class RigidElement(LinearStructure):
+class CouplingElement(LinearStructure):
     def __init__(self, start, end, *args, **kwargs):
         super().__init__(start, end, *args, **kwargs)
         self.color = PURPLE_7
@@ -17,8 +17,8 @@ class RigidElement(LinearStructure):
         return line_tags
     
     def as_vtk(self):
-        from pulse.interface.viewer_3d.actors import RigidElementActor
-        return RigidElementActor(self)
+        from pulse.interface.viewer_3d.actors import CouplingElementActor
+        return CouplingElementActor(self)
 
     def define_gmsh_mesh_constraints(self):
         import gmsh
@@ -26,11 +26,11 @@ class RigidElement(LinearStructure):
             gmsh.model.mesh.setTransfiniteCurve(tag, 2)
 
     @classmethod
-    def load_from_data(cls, data: dict) -> "RigidElement":
+    def load_from_data(cls, data: dict) -> "CouplingElement":
         start = Point(*data["start_coords"])
         end = Point(*data["end_coords"])
         structure = cls(start, end)
-        structure.extra_info["structural_element_type"] = "rigid_element"
+        structure.extra_info["structural_element_type"] = "coupling_element"
         return structure
 
     
