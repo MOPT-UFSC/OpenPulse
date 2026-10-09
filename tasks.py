@@ -38,7 +38,10 @@ def qrc_codegen(c):
         other_themes = [theme_dir for theme_dir in RESOURCES_DIR if theme_dir != dir]
 
         for file_path in dir.parent.rglob("*"):
-            if not file_path.is_file() or file_path.suffix.lower() != ".png":
+            if not file_path.is_file():
+                continue
+                
+            if file_path.suffix.lower() != ".png":
                 continue
 
             if any(other in file_path.parents for other in other_themes):
