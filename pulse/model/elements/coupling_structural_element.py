@@ -121,7 +121,7 @@ class CouplingStructuralElement(StructuralElement):
 
         Returns a 3x3 matrix ``Q`` whose rows are ``(e_t, e_ip, e_op)``:
 
-            e_t  = branch axis (element axis, master -> slave) -> torsion
+            e_t  = branch axis (element axis, master -> subordinate) -> torsion
             e_ip = header axis orthogonalized to the branch     -> in-plane
             e_op = e_t x e_ip (normal to the header/branch plane) -> out-of-plane
 
@@ -164,9 +164,9 @@ class CouplingStructuralElement(StructuralElement):
             k_ip -> in-plane axis, along the header direction
             k_op -> out-of-plane axis, normal to the (header, branch) plane
 
-        A zero value keeps the joint rotationally rigid (the slave rotation is
+        A zero value keeps the joint rotationally rigid (the subordinate rotation is
         eliminated). A finite value adds the joint flexibility (shell and
-        ovalization effects), so the relative rotation between master and slave
+        ovalization effects), so the relative rotation between master and subordinate
         grows with the applied moment.
 
         ``standard`` selects the flexibility model used to evaluate the
@@ -245,7 +245,7 @@ class CouplingStructuralElement(StructuralElement):
         """
         Element stiffness matrix (12x12) of the rotational joint spring, in the
         global coordinate system. It penalizes the relative rotation between the
-        slave (last) and the master (first) node::
+        subordinate (last) and the master (first) node::
 
             0.5 * (theta_s - theta_m)^T K_s (theta_s - theta_m)
         """

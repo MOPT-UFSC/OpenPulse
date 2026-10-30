@@ -8,9 +8,9 @@ from pulse.model.node import DOF_PER_NODE_STRUCTURAL
 
 class KinematicCoupling:
     """
-    Master-slave (MPC) coupling built from the coupling elements.
+    Master-subordinate (MPC) coupling built from the coupling elements.
 
-    Each coupling element ties its slave (last) node to its master (first) node.
+    Each coupling element ties its subordinate (last) node to its master (first) node.
     The kinematic relation is:
 
         u_t,s = T_JR_t * u_master                  (translations, always rigid)
@@ -22,7 +22,7 @@ class KinematicCoupling:
     to zero, i.e. ``(theta_s - theta_m) . e_rigid = 0``.
 
     This is an exact constraint in the joint frame, so it does not depend on the
-    slave rotations being aligned with the global axes.
+    subordinate rotations being aligned with the global axes.
     """
 
     def __init__(self, preprocessor):
@@ -53,7 +53,7 @@ class KinematicCoupling:
             couplings.append(
                 dict(
                     master=element.first_node,
-                    slave=element.last_node,
+                    subordinate=element.last_node,
                     T=element.translation_constraint_matrix(),
                     free_axes=free_axes,
                     n_free=int(free_axes_mask.sum()),
@@ -64,7 +64,7 @@ class KinematicCoupling:
 
         if not couplings:
             self.active = False
-            self.slave_dofs = np.array([], dtype=int)
+            self.subordinate_dofs = np.array([], dtype=int)
             self.n_reduced = self.total_dof
             self.full_to_reduced = None
             self.T_global = None
@@ -72,18 +72,18 @@ class KinematicCoupling:
             return
 
         self.active = True
-        self.node_couplings = {c["slave"].index: c for c in couplings}
+        self.node_couplings = {c["subordinate"].index: c for c in couplings}
 
-        # All slave DOFs are eliminated from the global nodal space. Translations
+        # All subordinate DOFs are eliminated from the global nodal space. Translations
         # are expressed by the master through T_JR, while rotations become
         # theta_s = theta_m + Q_free^T * alpha, with alpha being new internal
         # (relative rotation) DOFs.
-        slave_dofs = []
+        subordinate_dofs = []
         for coupling in self.couplings:
-            slave_dofs.extend(int(dof) for dof in coupling["slave"].structural_global_dof)
-        self.slave_dofs = np.array(slave_dofs, dtype=int)
+            subordinate_dofs.extend(int(dof) for dof in coupling["subordinate"].structural_global_dof)
+        self.subordinate_dofs = np.array(subordinate_dofs, dtype=int)
 
-        kept_dofs = np.setdiff1d(np.arange(self.total_dof), self.slave_dofs)
+        kept_dofs = np.setdiff1d(np.arange(self.total_dof), self.subordinate_dofs)
         n_kept_global = len(kept_dofs)
 
         # Allocate reduced indices for the internal relative rotations (alpha).
@@ -109,7 +109,7 @@ class KinematicCoupling:
 
         for coupling in self.couplings:
             master_global_dofs = coupling["master"].structural_global_dof
-            slave_global_dofs = coupling["slave"].structural_global_dof
+            subordinate_global_dofs = coupling["subordinate"].structural_global_dof
             master_reduced = self.full_to_reduced[master_global_dofs]
 
             if np.any(master_reduced < 0):
@@ -122,26 +122,26 @@ class KinematicCoupling:
             free_axes = coupling["free_axes"]
             alpha_reduced = coupling["alpha_reduced"]
 
-            # Slave translations: u_t,s = T_JR * u_master
+            # Subordinate translations: u_t,s = T_JR * u_master
             for i in range(3):
-                slave_dof = int(slave_global_dofs[i])
+                subordinate_dof = int(subordinate_global_dofs[i])
                 for j in range(DOF_PER_NODE_STRUCTURAL):
-                    rows.append(slave_dof)
+                    rows.append(subordinate_dof)
                     cols.append(int(master_reduced[j]))
                     data.append(float(T_jr[i, j]))
 
-            # Slave rotations: theta_s = theta_m + Q_free^T * alpha
+            # Subordinate rotations: theta_s = theta_m + Q_free^T * alpha
             for i in range(3):
-                slave_dof = int(slave_global_dofs[3 + i])
+                subordinate_dof = int(subordinate_global_dofs[3 + i])
 
                 # Rigid-body part: follows the master rotation.
-                rows.append(slave_dof)
+                rows.append(subordinate_dof)
                 cols.append(int(master_reduced[3 + i]))
                 data.append(1.0)
 
                 # Relative part: only the axes with a finite spring stiffness.
                 for j in range(coupling["n_free"]):
-                    rows.append(slave_dof)
+                    rows.append(subordinate_dof)
                     cols.append(int(alpha_reduced[j]))
                     data.append(float(free_axes[j, i]))
 
@@ -156,13 +156,13 @@ class KinematicCoupling:
         of the element (congruence transform to the reduced independent space).
 
         u_e = [u1,v1,w1,rx1,ry1,rz1, u2,v2,w2,rx2,ry2,rz2]
-        node 1 = master (first), node 2 = slave (last)
+        node 1 = master (first), node 2 = subordinate (last)
         red_cols holds the reduced DOF index of each column of L. Those indices
         may be global nodal DOFs or internal relative-rotation DOFs (alpha).
 
         Regular nodes map through the identity.
 
-        For a slave node:
+        For a subordinate node:
 
             u_t,s   = T_JR[0:3, :] * u_master
             theta_s = theta_master + Q_free^T * alpha
@@ -176,7 +176,7 @@ class KinematicCoupling:
 
         independently of the global axes.
 
-        T_JR (rigid body relation for the slave translations):
+        T_JR (rigid body relation for the subordinate translations):
 
             T_JR = [ 1  0  0    0   dz -dy ]
                    [ 0  1  0  -dz   0   dx ]
@@ -227,7 +227,7 @@ class KinematicCoupling:
 
         entries = list()
 
-        # Process both nodes of the element (master first, slave second)
+        # Process both nodes of the element (master first, subordinate second)
         for node_index, node in enumerate((element_attributes.first_node, element_attributes.last_node)):
             dof_base = DOF_PER_NODE_STRUCTURAL * node_index
             node_global_dofs = node.structural_global_dof
@@ -277,7 +277,7 @@ class KinematicCoupling:
         return self.T_global.T @ matrix @ self.T_global
 
     def reduce_load(self, load):
-        """Applies ``T^T f``, transferring slave loads onto the master."""
+        """Applies ``T^T f``, transferring subordinate loads onto the master."""
         if not self.active:
             return load
         return np.asarray(self.T_global.T @ load)
