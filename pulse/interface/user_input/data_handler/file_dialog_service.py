@@ -166,15 +166,17 @@ class FileDialogService:
                 return 1
             case "pulse" | "pulse.zip":
                 return 2
-            case "iges" | "igs" | "step" | "stp":
+            case "inp":
                 return 3
-            case "msh" | "bdf" | "nas":
+            case "iges" | "igs" | "step" | "stp":
                 return 4
-            case "mp4":
+            case "msh" | "bdf" | "nas":
                 return 5
-            case "webp":
+            case "mp4":
                 return 6
-            case "gif":
+            case "webp":
                 return 7
-            case _:
+            case "gif":
                 return 8
+            case _:
+                return 9
