@@ -263,6 +263,7 @@ class LoadProject:
 
             self.load_expansion_joints(line_id, data)
             self.load_valves(line_id, data)
+            self.load_coupling_info(line_id, data)
             self.load_stress_stiffening(line_id, data)
 
 
@@ -317,6 +318,14 @@ class LoadProject:
 
         self.preprocessor.add_valve_by_lines(line_id, prop_data)
         self.preprocessor.set_cross_sections_to_valve_elements(line_id, data)
+
+    def load_coupling_info(self, line_id: int, data: dict):
+
+        prop_data = data.get("coupling_info")
+        if not isinstance(prop_data, dict):
+            return
+
+        self.preprocessor.set_coupling_info_by_lines(line_id, prop_data)
 
 
     def load_stress_stiffening(self, line_id: list, data: dict):

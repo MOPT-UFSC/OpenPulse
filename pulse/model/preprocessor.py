@@ -78,7 +78,7 @@ class Preprocessor:
 
     def generate(self, import_type: ImportType, geometry_path: str = ""):
         """
-        It loads geometry file or data and process the mesh.            
+        It loads geometry file or data and process the mesh.
         """
 
         t0 = perf_counter()
@@ -103,10 +103,10 @@ class Preprocessor:
         ----------
         indexes : List
             Nodes global indexes.
-            
+
         coords : array
             Nodes coordinates.
-            
+
         map_nodes : dict
             Dictionary maps global indexes to external indexes.
         """
@@ -122,13 +122,13 @@ class Preprocessor:
         ----------
         indexes : List
             Nodes global indexes.
-            
+
         connectivities : array
             Connectivity matrix that relates the elements and its nodes.
-            
+
         map_nodes : dict
             Dictionary maps global indexes to external indexes.
-            
+
         map_elements : dict
             Dictionary maps global element indexes.
         """
@@ -178,7 +178,7 @@ class Preprocessor:
         Parameters
         ----------
         line_id : int
-        
+
         """
         first_element_ID = self.mesh.elements_from_line[line_id][0]
         last_element_ID = self.mesh.elements_from_line[line_id][-1]
@@ -244,9 +244,9 @@ class Preprocessor:
         """
         number_elements = self.number_structural_elements
         if number_elements <= 1e3:
-            self.section_number_of_divisions = 36 
+            self.section_number_of_divisions = 36
         if number_elements <= 5e3:
-            self.section_number_of_divisions = 24        
+            self.section_number_of_divisions = 24
         elif number_elements <= 1e4:
             self.section_number_of_divisions = 16
         elif number_elements <= 5e4:
@@ -258,7 +258,7 @@ class Preprocessor:
 
     def neighbor_elements_diameter(self):
         """
-        This method maps the elements outer diameters that each node belongs to. The maping is done 
+        This method maps the elements outer diameters that each node belongs to. The maping is done
         according to the node external index.
 
         Returns
@@ -352,17 +352,17 @@ class Preprocessor:
         if disconnected_nodes:
             title = "Problem detected in connectivity between neighbor nodes"
             message = "At least one disconnected node has been detected at the edge of one line due "
-            message += "to the mismatch between the geometry 'keypoints' and the current mesh setup. " 
+            message += "to the mismatch between the geometry 'keypoints' and the current mesh setup. "
             message += "We strongly recommend reducing the element size or correcting the problem "
             message += "in the geometry file before proceeding with the model setup.\n\n"
             message += f"List of disconnected node(s): \n{disconnected_nodes}"
-            PrintMessageInput(["warning", title, message])                
-        
+            PrintMessageInput(["warning", title, message])
+
     def get_line_from_node_id(self, node_ids: int | list[int]) -> list[int]:
 
         if isinstance(node_ids, int):
             node_ids = [node_ids]
-        
+
         line_ids = list()
         for node_id in node_ids:
             line_ids.extend(self.mesh.lines_from_node.get(node_id))
@@ -386,8 +386,8 @@ class Preprocessor:
         --------
 
             external_index: int
-                this value correspond to the 
-        
+                this value correspond to the
+
         """
 
         external_indexes = self.mesh.nodal_coordinates[:, 0]
@@ -420,8 +420,8 @@ class Preprocessor:
 
     def compute_structure_bounding_box_diagonal(self):
         """
-        This method updates the principal structure diagonal parallelepiped attribute. 
-        
+        This method updates the principal structure diagonal parallelepiped attribute.
+
         """
         xyz_min = np.min(self.mesh.nodal_coordinates[:, 1:], axis=0)
         xyz_max = np.max(self.mesh.nodal_coordinates[:, 1:], axis=0)
@@ -436,7 +436,7 @@ class Preprocessor:
         ----------
         row : array.
             Integers that place the rows.
-            
+
         column : array.
             Integers that place the columns.
         """
@@ -447,7 +447,7 @@ class Preprocessor:
         cols_dofs = cols_dofs.reshape(rows, cols)
 
         ind_j = np.tile(cols_dofs, cols)
-        ind_i = cols_dofs.reshape(-1, 1) @ np.ones((1, cols), dtype=int) 
+        ind_i = cols_dofs.reshape(-1, 1) @ np.ones((1, cols), dtype=int)
 
         return ind_i.flatten(), ind_j.flatten()
 
@@ -459,7 +459,7 @@ class Preprocessor:
         ----------
         row : array.
             Integers that place the rows.
-            
+
         column : array.
             Integers that place the columns.
         """
@@ -482,10 +482,10 @@ class Preprocessor:
         ----------
         elements : list
             Structural elements indexes.
-            
+
         element_type : str, ['pipe_1', 'beam_1', 'expansion_joint', 'valve']
             Structural element type to be attributed to the listed elements.
-            
+
         remove : bool, optional
             True if the element_type have to be removed from the structural element type dictionary. False otherwise.
             Default is False.
@@ -502,7 +502,7 @@ class Preprocessor:
         ----------
         elements : list
             Structural elements indexes.
-            
+
         force_offset : int, [0, 1]
             Structural element type to be attributed to the listed elements.
 
@@ -518,7 +518,7 @@ class Preprocessor:
         ----------
         elements : list
             Structural elements indexes.
-            
+
         wall_formulation : str, ['thick_wall', 'thin_wall']
             Structural element type to be attributed to the listed elements.
 
@@ -619,7 +619,7 @@ class Preprocessor:
         ----------
         line : list
             Entities tag.
-            
+
         cross_section : Cross section object
             Tube cross section data.
         """
@@ -809,10 +809,10 @@ class Preprocessor:
         ----------
         line : list
             Entities tag.
-            
+
         element_type : str, ['pipe_1', 'beam_1', 'expansion_joint', 'valve']
             Structural element type to be attributed to elements.
-            
+
         remove : bool, optional
             True if the element_type have to be removed from the structural element type dictionary. False otherwise.
             Default is False.
@@ -838,10 +838,10 @@ class Preprocessor:
         ----------
         line : list
             Entities tag.
-            
+
         element_type : str, ['undamped', 'proportional', 'wide_duct', 'LRF_fluid_equivalent', 'LRF_full']
             Acoustic element type to be attributed to the listed elements.
-            
+
         proportional_damping : float, optional
             Acoustic proportional damping coefficient. It must be attributed to the elements of type 'proportional'.
             Default is None.
@@ -852,9 +852,9 @@ class Preprocessor:
             line_ids = [line_ids]
 
         for elements in slicer(self.mesh.elements_from_line, line_ids):
-            self.set_acoustic_element_type_by_element(  elements, 
-                                                        element_type, 
-                                                        proportional_damping = proportional_damping, 
+            self.set_acoustic_element_type_by_element(  elements,
+                                                        element_type,
+                                                        proportional_damping = proportional_damping,
                                                         volumetric_flow_rate = volumetric_flow_rate  )
 
     # Structural physical quantities
@@ -866,7 +866,7 @@ class Preprocessor:
         ----------
         elements : list
             Acoustic and structural elements indexes.
-            
+
         material : Material object
             Material data.
         """
@@ -881,7 +881,7 @@ class Preprocessor:
         ----------
         line : list
             Entities tag.
-            
+
         material : Material object
             Material data.
         """
@@ -971,7 +971,7 @@ class Preprocessor:
         This method enables or disables the addition of fluid mass in the structural element mass.
 
         Parameters
-        ----------            
+        ----------
         reset : bool, optional
             True if the fluid mass effect have to be disable. False to enable.
             Default is False.
@@ -988,16 +988,16 @@ class Preprocessor:
         ----------
         elements : list
             Acoustic elements indexes.
-            
+
         value : bool
             True if the capped end effect have to be activated. False otherwise.
 
         selection : ?????
             ??????
-        """      
+        """
         for element_attributes in slicer(self.elements_attributes, elements):
             element_attributes.capped_end = value
- 
+
     def set_capped_end_by_lines(self, line_ids: (int | list | tuple), value: bool):
         """
         This method enables or disables the capped end effect to all acoustic elements that belongs to a line.
@@ -1006,7 +1006,7 @@ class Preprocessor:
         ----------
         line_ids : list
             Lines/entities indexes.
-            
+
         value : bool
             True if the capped end effect have to be activated. False otherwise.
         """
@@ -1027,9 +1027,9 @@ class Preprocessor:
         ----------
         lines : list
             Lines/entities indexes.
-            
+
         wall_formulation : str, ['thick_wall', 'thin_wall']
-            Structural element type to be attributed to the listed elements. 
+            Structural element type to be attributed to the listed elements.
         """
         if isinstance(lines, int):
             lines = [lines]
@@ -1046,9 +1046,9 @@ class Preprocessor:
         ----------
         lines : list
             Lines/entities indexes.
-            
+
         force offset : bool
-            This argument controls when the structural element force offset will be activated. 
+            This argument controls when the structural element force offset will be activated.
         """
         if isinstance(lines, int):
             lines = [lines]
@@ -1117,7 +1117,7 @@ class Preprocessor:
 
         data : dict or None
             ????????.
-            
+
         remove : bool, optional
             True if the ???????? have to be removed from the ???????? dictionary. False otherwise.
             Default is False.
@@ -1143,7 +1143,7 @@ class Preprocessor:
 
         data : dict
             ????????.
-            
+
         remove : bool, optional
             True if the ???????? have to be removed from the ???????? dictionary. False otherwise.
             Default is False.
@@ -1158,6 +1158,27 @@ class Preprocessor:
                 for element_attributes in slicer(self.elements_attributes, elements):
                     element_attributes.valve_data = valve_data
 
+    def set_coupling_info_by_lines(self, line_ids: (int | list), coupling_info: dict):
+        """
+        Attributes the coupling info (header and branch data) to the elements of
+        the given line(s).
+
+        Parameters
+        ----------
+        line_ids : int | list[int]
+            Line id(s) whose elements receive the coupling info. Only the line
+            that represents the coupling element should be passed here.
+        coupling_info : dict
+            Header and branch data (cross-section, material and direction).
+        """
+        if isinstance(line_ids, int):
+            line_ids = [line_ids]
+
+        for line_id in line_ids:
+            element_ids = self.mesh.elements_from_line[line_id]
+            for element_id in element_ids:
+                self.elements_attributes[element_id].coupling_info = coupling_info
+
     # Acoustic physical quantities
     def set_fluid_by_element(self, elements: list[int], fluid: Fluid):
         """
@@ -1167,7 +1188,7 @@ class Preprocessor:
         ----------
         elements : list
             Acoustic elements indexes.
-            
+
         fluid : Fluid object
             Fluid data.
         """
@@ -1183,7 +1204,7 @@ class Preprocessor:
         ----------
         line/entity : list
             Lines/entities tags.
-            
+
         fluid : Fluid object
             Fluid data.
         """
@@ -1201,17 +1222,17 @@ class Preprocessor:
         ----------
         elements : list
             Acoustic elements indexes.
-            
+
         value : [None, 0, 1, 2]
             Acoustic length correction due to acoustic discontinuities. The prescription is done through the following labeling:
             None: disable
             0 : expansion
             1 : side_branch
-            2 : loop 
+            2 : loop
 
         section : ?????
             ??????
-            
+
         remove : bool, optional
             True if the ???????? have to be removed from the ???????? dictionary. False otherwise.
             Default is False.
@@ -1257,14 +1278,14 @@ class Preprocessor:
 
     def get_acoustic_elements_global_dofs(self):
         """
-        This method returns the acoustic global degrees of freedom of the nodes associated to structural beam elements. 
+        This method returns the acoustic global degrees of freedom of the nodes associated to structural beam elements.
         This method helps to exclude those degrees of freedom from acoustic analysis.
 
         Returns
         ----------
         list
             Acoustic global degrees of freedom associated to beam element.
-        """ 
+        """
         pipe_gdofs = dict()
         for index, element_attributes in self.elements_attributes.items():
 
@@ -1274,7 +1295,7 @@ class Preprocessor:
             if element_attributes.structural_element_type in ['pipe_1', 'expansion_joint', 'valve']:
                 gdofs_node_first = element_attributes.first_node.index
                 gdofs_node_last = element_attributes.last_node.index
-                pipe_gdofs[gdofs_node_first] = gdofs_node_first 
+                pipe_gdofs[gdofs_node_first] = gdofs_node_first
                 pipe_gdofs[gdofs_node_last] = gdofs_node_last
 
         return list(pipe_gdofs.keys())
@@ -1295,7 +1316,7 @@ class Preprocessor:
         beam_gdofs = np.delete(all_indexes, acoustic_elements_global_dofs)
         return beam_gdofs, acoustic_elements_global_dofs
 
-    
+
     def _process_beam_nodes_and_indexes(self):
         """
         This method ?????.
@@ -1351,7 +1372,7 @@ class Preprocessor:
             acoustic_nodes[first_node] = element_attributes.first_node
             acoustic_nodes[last_node] = element_attributes.last_node
 
-        return acoustic_nodes  
+        return acoustic_nodes
 
     def get_beam_elements(self) -> list:
         """
@@ -1406,7 +1427,7 @@ class Preprocessor:
             Global degrees of freedom ordered according to its indexes.
 
         first_node : Node object
-            First node. 
+            First node.
 
         last_node : Node object
             Last node.
@@ -1451,21 +1472,21 @@ class Preprocessor:
 
             link_data = dict()
 
-            ext_id1 = min(node_ids) 
+            ext_id1 = min(node_ids)
             ext_id2 = max(node_ids)
-            gdofs, *_ = self.get_gdofs_from_nodes(*node_ids)     
+            gdofs, *_ = self.get_gdofs_from_nodes(*node_ids)
 
             gdofs_node1 = gdofs[:DOF_PER_NODE_STRUCTURAL]
             gdofs_node2 = gdofs[DOF_PER_NODE_STRUCTURAL:]
-            
+
             if "values" in data.keys():
                 values = data["values"]
 
                 pos_data = [ value if isinstance(value, complex | np.ndarray) else None for value in values]
                 neg_data = [-value if isinstance(value, complex | np.ndarray) else None for value in values]
 
-                indexes_i = [ gdofs_node1, gdofs_node1, gdofs_node2, gdofs_node2 ] 
-                indexes_j = [ gdofs_node1, gdofs_node2, gdofs_node1, gdofs_node2 ] 
+                indexes_i = [ gdofs_node1, gdofs_node1, gdofs_node2, gdofs_node2 ]
+                indexes_j = [ gdofs_node1, gdofs_node2, gdofs_node1, gdofs_node2 ]
 
                 out_data = list()
                 for pn_data in [ pos_data, neg_data, neg_data, pos_data ]:
@@ -1501,8 +1522,8 @@ class Preprocessor:
             return
 
         coords = list()
-        
-        ext_id1 = min(node_ids) 
+
+        ext_id1 = min(node_ids)
         ext_id2 = max(node_ids)
 
         neigh_elem_node_1 = self.elements_connected_to_node.get(ext_id1)
@@ -1530,14 +1551,14 @@ class Preprocessor:
 
         else:
             return
-        
+
         node_1 = self.nodes[ext_id1]
         node_2 = self.nodes[ext_id2]
 
         int_id1 = node_1.index
         int_id2 = node_2.index
 
-        indexes_i = [ int_id1, int_id2, int_id1, int_id2 ] 
+        indexes_i = [ int_id1, int_id2, int_id1, int_id2 ]
         indexes_j = [ int_id1, int_id1, int_id2, int_id2 ]
 
         pipe_element_attributes = self.elements_attributes.get(element_pipe)
@@ -1562,7 +1583,7 @@ class Preprocessor:
 
             coords = list()
 
-            ext_id1 = min(node_ids) 
+            ext_id1 = min(node_ids)
             ext_id2 = max(node_ids)
 
             gdofs, *args = self.get_gdofs_from_nodes(ext_id1, ext_id2)
@@ -1573,8 +1594,8 @@ class Preprocessor:
             pos_data = np.ones(DOF_PER_NODE_STRUCTURAL, dtype=float) * stiffness
             neg_data = -pos_data
 
-            indexes_i = [ gdofs_node1, gdofs_node1, gdofs_node2, gdofs_node2 ] 
-            indexes_j = [ gdofs_node1, gdofs_node2, gdofs_node1, gdofs_node2 ] 
+            indexes_i = [ gdofs_node1, gdofs_node1, gdofs_node2, gdofs_node2 ]
+            indexes_j = [ gdofs_node1, gdofs_node2, gdofs_node1, gdofs_node2 ]
             out_data = [ pos_data, neg_data, neg_data, pos_data ]
 
             indexes_i = np.array(indexes_i, dtype=int).flatten()
@@ -1610,7 +1631,7 @@ class Preprocessor:
             int_id1 = self.nodes[input_node_id].index
             int_id2 = self.nodes[output_node_id].index
 
-            indexes_i = [ int_id1, int_id1, int_id2, int_id2 ] 
+            indexes_i = [ int_id1, int_id1, int_id2, int_id2 ]
             indexes_j = [ int_id1, int_id2, int_id1, int_id2 ]
 
             coords_1 = self.nodes[input_node_id].coordinates
@@ -1735,7 +1756,7 @@ class Preprocessor:
         }
 
         structural_etype_to_number_elements = {"pipe_1": 0, "beam_1": 0, "expansion_joint": 0, "valve": 0, None: 0}
-        
+
         acoustic_etype_to_elements = defaultdict(list)
         structural_etype_to_elements = defaultdict(list)
 
@@ -1755,19 +1776,19 @@ class Preprocessor:
 
     def set_unprescribed_pipe_indexes(self, indexes):
         self.unprescribed_pipe_indexes = indexes
-    
+
     def get_unprescribed_pipe_indexes(self):
         return self.unprescribed_pipe_indexes
 
     def update_nodal_solution_info(self, nodal_solution: np.ndarray):
-        """ This method sets the static nodal solution for 
+        """ This method sets the static nodal solution for
             stress stiffening analysis.
         Parameters
         ----------
         nodal_solution: complex array of values
         """
 
-        for node in self.nodes.values():  
+        for node in self.nodes.values():
             node.static_nodal_solution_gcs = nodal_solution[node.structural_global_dof, 0]
 
         for element_attributes in self.elements_attributes.values():
@@ -1785,12 +1806,12 @@ class Preprocessor:
 
     def process_all_transformation_matrices(self):
         """
-        This method processes the element and cross-section rotations. 
+        This method processes the element and cross-section rotations.
         """
         n_el = self.number_structural_elements
         delta_data = np.zeros((n_el, 3), dtype=float)
         xaxis_rotation_angle = np.zeros(n_el, dtype=float)
-   
+
         for index, (element_id, element_attributes) in enumerate(self.elements_attributes.items()):
             delta_data[index, :] = element_attributes.delta_x, element_attributes.delta_y, element_attributes.delta_z
             xaxis_rotation_angle[index] = element_attributes.xaxis_rotation_angle
@@ -1846,7 +1867,7 @@ class Preprocessor:
             points[i] = self.nodes[i]
 
         return points
-    
+
 
 
     ## TODO: Please, just remove these lines once we're convinced that everything is fine.
@@ -1859,10 +1880,10 @@ class Preprocessor:
     #     ----------
     #     indexes : List
     #         Nodes global indexes.
-            
+
     #     coords : array
     #         Nodes coordinates.
-            
+
     #     map_nodes : dict
     #         Dictionary maps global indexes to external indexes.
     #     """
@@ -1886,13 +1907,13 @@ class Preprocessor:
     #     ----------
     #     indexes : List
     #         Nodes global indexes.
-            
+
     #     connectivities : array
     #         Connectivity matrix that relates the elements and its nodes.
-            
+
     #     map_nodes : dict
     #         Dictionary maps global indexes to external indexes.
-            
+
     #     map_elements : dict
     #         Dictionary maps global element indexes.
     #     """
@@ -1919,23 +1940,23 @@ class Preprocessor:
     #     stack = deque()
     #     list_nodes = list(self.nodes.values())
 
-    #     stack.appendleft(list_nodes[0].index) 
+    #     stack.appendleft(list_nodes[0].index)
 
     #     while stack:
-        
+
     #         top = self.nodes[stack.pop()]
-    
+
     #         if top.index is None:
     #             top.index = index
     #             index += 1
     #         else:
     #             continue
-            
+
     #         for neighbor in self.neighbors_nodes[top.index]:
     #             if neighbor.index is None:
     #                 if neighbor.index not in stack:
     #                     stack.appendleft(neighbor.index)
-                    
+
     #         if len(stack) != 0:
     #             continue
 
@@ -1948,7 +1969,7 @@ class Preprocessor:
     #             #TODO: uncomment to begin from start or end nodes
     #             # for node in list_nodes:
     #             #     if len(self.neighbors_nodes[node]) == 1:
-    #             #         stack.appendleft(node)   
+    #             #         stack.appendleft(node)
 
     # def _mapping_nodes_indexes(self):
     #     self.map_global_to_external_index = {node.index:node.index for node in self.nodes.values()}
@@ -1985,7 +2006,7 @@ class Preprocessor:
     #         index = self.nodes[external_index].index
     #         nodal_coordinates[index,:] = index, node.x, node.y, node.z
     #         nodal_coordinates_external[index,:] = external_index, node.x, node.y, node.z
-    #     # else:               
+    #     # else:
     #     #     for external_index, node in self.nodes.items():
     #     #         index = self.nodes[external_index].index
     #     #         nodal_coordinates[index,:] = external_index, node.x, node.y, node.z
@@ -2019,20 +2040,20 @@ class Preprocessor:
     #             last_node  = element_attributes.last_node
     #             connectivity[i, :] = i + 1, first_node.index, last_node.index
 
-    #     self.connectivity_matrix = connectivity.astype(int) 
-    
+    #     self.connectivity_matrix = connectivity.astype(int)
+
     # def get_neighbor_nodes_and_elements_by_node(self, node_id: int, length: float, tolerance: float = 1e-6):
-    #     """ This method returns two lists of nodes ids and elements ids at the neighborhood of the 
-    #         node_id in the range of -(length/2) - tolerance and (length/2) + tolerance. The tolerance 
+    #     """ This method returns two lists of nodes ids and elements ids at the neighborhood of the
+    #         node_id in the range of -(length/2) - tolerance and (length/2) + tolerance. The tolerance
     #         avoids the problem of element size deviations resultant in the mesh generation algorithm.
-        
+
     #     Parameters
     #     ----------
 
     #     Returns
-    #     ---------- 
+    #     ----------
 
-    #     """ 
+    #     """
     #     half_length = (length/2) + tolerance
     #     node_central = self.nodes[node_id]
     #     list_nodes_ids = [node_id]
@@ -2053,7 +2074,7 @@ class Preprocessor:
     #                 continue
 
     #             list_nodes_ids.append(node_id)
-    #             stack.appendleft(node_id)                    
+    #             stack.appendleft(node_id)
 
     #     list_elements_ids = list()
     #     for index, element_attributes in self.elements_attributes.items():
@@ -2067,16 +2088,16 @@ class Preprocessor:
     #     return list_nodes_ids, list_elements_ids
 
     # def get_neighbor_nodes_and_elements_by_element(self, element_id, length, tolerance=1e-5):
-    #     """ This method returns two lists of nodes ids and elements ids at the neighborhood of the 
-    #         element_id in the range of -(length/2) - tolerance and (length/2) + tolerance. The tolerance 
+    #     """ This method returns two lists of nodes ids and elements ids at the neighborhood of the
+    #         element_id in the range of -(length/2) - tolerance and (length/2) + tolerance. The tolerance
     #         avoids the problem of element size deviations resultant in the mesh generation algorithm.
 
     #     Parameters
-    #     ---------- 
+    #     ----------
 
     #     Returns
-    #     ---------- 
-                               
+    #     ----------
+
     #     """
     #     element_attributes = self.elements_attributes.get(element_id)
     #     node_id = element_attributes.first_node.index
@@ -2086,7 +2107,7 @@ class Preprocessor:
     #     list_nodes_ids, list_elements_ids = self.get_neighbor_nodes_and_elements_by_node(node_id, length_t, tolerance=tolerance)
 
     #     if list_nodes_ids is not None:
-                
+
     #         for external_index in list_nodes_ids:
     #             node = self.nodes[external_index]
     #             if np.linalg.norm((last_node.coordinates - node.coordinates)) > ((length_t/2) + tolerance):
@@ -2095,7 +2116,7 @@ class Preprocessor:
     #         for index in list_elements_ids:
     #             if element_attributes.first_node.index in list_nodes_ids:
     #                 continue
-                
+
     #             index = element_attributes.index
     #             if index in list_elements_ids:
     #                 list_elements_ids.remove(index)
@@ -2103,9 +2124,9 @@ class Preprocessor:
     #             if element_attributes.last_node.index in list_nodes_ids:
     #                 continue
 
-    #             if index in list_elements_ids: 
+    #             if index in list_elements_ids:
     #                 list_elements_ids.remove(index)
-                    
+
     #         return list_nodes_ids, list_elements_ids
     #     else:
     #         return None, None

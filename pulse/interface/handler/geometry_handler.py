@@ -578,6 +578,7 @@ class GeometryHandler:
         pulsation_damper_info = dict()
         valve_info = dict()
         expansion_joint_info = dict()
+        coupling_info = dict()
 
         tags = self.get_structures_tags()
 
@@ -623,6 +624,9 @@ class GeometryHandler:
             if "expansion_joint_info" in structure.extra_info.keys():
                 expansion_joint_info[tag] = structure.extra_info["expansion_joint_info"]
 
+            if "coupling_info" in structure.extra_info.keys():
+                coupling_info[tag] = structure.extra_info["coupling_info"]
+
             if "valve_info" in structure.extra_info.keys():
                 valve_info[tag] = structure.extra_info["valve_info"]
 
@@ -660,6 +664,9 @@ class GeometryHandler:
 
         for line_id, ej_data in expansion_joint_info.items():
             self.project.model.properties._set_line_property("expansion_joint_info", ej_data, line_ids=line_id)
+
+        for line_id, c_info in coupling_info.items():
+            self.project.model.properties._set_line_property("coupling_info", c_info, line_ids=line_id)
 
         for line_id, valve_data in valve_info.items():
             self.project.model.properties._set_line_property("valve_info", valve_data, line_ids=line_id)

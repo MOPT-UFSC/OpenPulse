@@ -61,6 +61,9 @@ class ElementAttributes:
         # expansion joint data
         self.expansion_joint_data: None | ExpansionJointData = None
 
+        # coupling element data (header and branch cross-section/material info)
+        self.coupling_info: dict | None = None
+
         # perforated plate data
         self.perforated_plate_data: None | PerforatedPlateData = None
 

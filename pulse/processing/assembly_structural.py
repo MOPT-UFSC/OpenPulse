@@ -220,10 +220,7 @@ class AssemblyStructural:
 
             element = build_structural_element(element_attributes)
 
-            if element_attributes.structural_element_type == "coupling_element":
-                continue
-
-            elif element_attributes.structural_element_type == "expansion_joint":
+            if element_attributes.structural_element_type == "expansion_joint":
                 self.expansion_joint_elements[index] = element
                 continue
 
@@ -231,7 +228,8 @@ class AssemblyStructural:
             element_attributes.matrices_for_stresses_recover = element.matrices_for_stresses_recover
 
             dofs = element.global_dof
-            L, dofs_red = self.constraint.element_transform(element_attributes)
+            L, red_cols = self.constraint.element_transform(element_attributes)
+            n_cols = L.shape[1]
 
             i_full.append(np.repeat(dofs, DOF_PER_ELEMENT))
             j_full.append(np.tile(dofs, DOF_PER_ELEMENT))
@@ -240,8 +238,8 @@ class AssemblyStructural:
 
             Ke_red = L.T @ Ke @ L
             Me_red = L.T @ Me @ L
-            i_red.append(np.repeat(dofs_red, DOF_PER_ELEMENT))
-            j_red.append(np.tile(dofs_red, DOF_PER_ELEMENT))
+            i_red.append(np.repeat(red_cols, n_cols))
+            j_red.append(np.tile(red_cols, n_cols))
             data_K_red.append(Ke_red.reshape(-1))
             data_M_red.append(Me_red.reshape(-1))
 

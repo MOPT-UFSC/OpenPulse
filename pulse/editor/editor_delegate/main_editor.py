@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import TypeVar
 
 import numpy as np
@@ -435,7 +436,8 @@ class MainEditor(Editor):
         coupling_element_start = point
         coupling_element_end = Point(*(point.coords() + branch_direction * coupling_element_length))
 
-        coupling_element = CouplingElement(coupling_element_start, coupling_element_end, extra_info=self._coupling_extra_info(pipe_before))
+        coupling_extra_info = self._coupling_extra_info(pipe_before, kwargs.get("extra_info", {}))
+        coupling_element = CouplingElement(coupling_element_start, coupling_element_end, extra_info=coupling_extra_info)
         self.pipeline.add_structure(coupling_element)
 
         branch_deltas = tuple(np.array(deltas, dtype=float) - np.array(coupling_element_end - coupling_element_start))
@@ -472,10 +474,28 @@ class MainEditor(Editor):
     def _has_matching_diameters(self, pipe_before: Pipe, pipe_after: Pipe) -> bool:
         return np.isclose(pipe_before.diameter, pipe_after.diameter)
 
-    def _coupling_extra_info(self, parent_pipe: Pipe) -> dict:
+    def _coupling_extra_info(self, parent_pipe: Pipe, branch_extra_info: dict) -> dict:
+        header_direction = parent_pipe.end.coords() - parent_pipe.start.coords()
+        header_norm = np.linalg.norm(header_direction)
+        if header_norm > 0:
+            header_direction = (header_direction / header_norm).tolist()
+        else:
+            header_direction = None
+
         return dict(
             structural_element_type="coupling_element",
             material_id=parent_pipe.extra_info.get("material_id"),
+            coupling_info=dict(
+                header=dict(
+                    cross_section_info=deepcopy(parent_pipe.extra_info.get("cross_section_info")),
+                    material_id=parent_pipe.extra_info.get("material_id"),
+                    direction=header_direction,
+                ),
+                branch=dict(
+                    cross_section_info=deepcopy(branch_extra_info.get("cross_section_info")),
+                    material_id=branch_extra_info.get("material_id"),
+                ),
+            ),
         )
 
     def _colapse_overloaded_bends(self):
