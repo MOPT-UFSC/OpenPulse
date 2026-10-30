@@ -119,7 +119,6 @@ class MainWindow(MainWindow_UI):
         self.setStyleSheet(self.combined_stylesheet)
 
     def _config_window(self):
-        self.showMinimized()
         self.pulse_icon = icons.get_openpulse_icon()
         self.setWindowIcon(self.pulse_icon)
 
