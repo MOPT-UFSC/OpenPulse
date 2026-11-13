@@ -33,6 +33,7 @@ class KinematicCoupling:
     def _build(self):
 
         couplings = []
+        header_printed = False
         for element_attributes in self.preprocessor.elements_attributes.values():
             if element_attributes.structural_element_type != "coupling_element":
                 continue
@@ -42,6 +43,19 @@ class KinematicCoupling:
             # Rotational stiffness per joint axis, ordered as (e_t, e_ip, e_op).
             k_ip, k_op, k_t = element.rotation_spring_stiffness()
             stiffness_per_axis = np.array([k_t, k_ip, k_op], dtype=float)
+
+            if not header_printed:
+                print("\n T-junction rotational spring constants")
+                print(
+                    f" {'element':>8} {'master':>8} {'subord.':>8} {'SIF (i)':>10} "
+                    f"{'k_ip':>14} {'k_op':>14} {'k_t':>14}  [N.m/rad]"
+                )
+                header_printed = True
+            print(
+                f" {element.index:>8} {element.first_node.index:>8} {element.last_node.index:>8} "
+                f"{element.asme_branch_connection_sif():>10.4g} "
+                f"{k_ip:>14.6g} {k_op:>14.6g} {k_t:>14.6g}"
+            )
 
             # A zero stiffness means a rigid axis: the relative rotation about
             # that axis is constrained to zero. Only the axes with a finite

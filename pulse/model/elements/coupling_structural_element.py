@@ -165,12 +165,11 @@ class CouplingStructuralElement(StructuralElement):
             k_op -> out-of-plane axis, normal to the (header, branch) plane
 
         A zero value keeps the joint rotationally rigid (the subordinate rotation is
-        eliminated). A finite value adds the joint flexibility (shell and
-        ovalization effects), so the relative rotation between master and subordinate
-        grows with the applied moment.
+        eliminated). A finite value adds the joint flexibility, so the relative
+        rotation between master and subordinate grows with the applied moment.
 
-        ``standard`` selects the flexibility model used to evaluate the
-        stiffness. Only ``"ASME"`` is implemented for now.
+        ``standard`` selects the model used to evaluate the stiffness.
+        Only ``"ASME"`` is implemented for now.
         """
         if rigid or self.coupling_info is None:
             return 0.0, 0.0, 0.0
@@ -182,31 +181,73 @@ class CouplingStructuralElement(StructuralElement):
         raise ValueError(f"Unsupported joint flexibility standard: {standard!r}")
 
 
-    def _asme_rotation_spring_stiffness(self) -> tuple[float, float, float]:
-        """
-        ASME-based rotational spring stiffness. The in-plane and out-of-plane
-        stiffness are kept equal for now (only the header geometry is used);
-        the torsion is kept at 1.0 as the reference value.
-        """
+    def _header_flexibility_characteristic(self) -> float | None:
         header = self.coupling_info.get("header", {})
         cross_section_info = header.get("cross_section_info") or {}
         section_parameters = cross_section_info.get("section_parameters") or []
 
         if len(section_parameters) < 2:
-            return 0.0, 0.0, 0.0
+            return None
 
         header_diameter = section_parameters[0]
         header_thickness = section_parameters[1]
 
         avg_header_radius = (header_diameter - header_thickness) / 2
         if avg_header_radius <= 0 or header_thickness <= 0:
+            return None
+
+        return header_thickness / avg_header_radius
+
+
+    def asme_branch_connection_sif(self) -> float:
+        """
+        ASME branch-connection stress intensification factor (SIF), ``i``,
+        computed as ``0.9/h**(2/3)``.
+
+        This is a stress concentration factor, not a rotational stiffness. The
+        joint spring constants ``k_ip`` and ``k_op`` are evaluated in
+        ``_asme_rotation_spring_stiffness``.
+        """
+        h = self._header_flexibility_characteristic()
+        if h is None:
+            return 0.0
+
+        return 0.9 / h ** (2 / 3)
+
+
+    def _asme_rotation_spring_stiffness(self) -> tuple[float, float, float]:
+        """
+        ASME-based rotational spring constants ``(k_ip, k_op, k_t)``, in moment
+        per radian.
+
+        The joint spring is the bending stiffness of the branch stub,
+        ``E*I/L``, where ``I`` is the branch second moment of area and ``L`` is
+        the coupling element length.
+        """
+        branch = self.coupling_info.get("branch", {})
+        cross_section_info = branch.get("cross_section_info") or {}
+        section_parameters = cross_section_info.get("section_parameters") or []
+
+        if len(section_parameters) < 2:
             return 0.0, 0.0, 0.0
 
-        h = header_thickness / avg_header_radius  # flexibility characteristic
+        branch_diameter = section_parameters[0]
+        branch_thickness = section_parameters[1]
+        branch_inside_diameter = branch_diameter - 2 * branch_thickness
 
-        k_ip = 0.9 / h ** (2 / 3)
+        if branch_diameter <= 0 or branch_inside_diameter <= 0:
+            return 0.0, 0.0, 0.0
+
+        elasticity_modulus = self.material.elasticity_modulus if self.material else 0.0
+        reference_length = self.length
+
+        if elasticity_modulus <= 0 or reference_length <= 0:
+            return 0.0, 0.0, 0.0
+
+        branch_inertia = np.pi * (branch_diameter**4 - branch_inside_diameter**4) / 64
+        k_ip = elasticity_modulus * branch_inertia / reference_length
         k_op = k_ip
-        k_t = 0 # rigid, as per ASME recommendation
+        k_t = 0.0  # rigid, as per ASME recommendation
 
         return k_ip, k_op, k_t
 
